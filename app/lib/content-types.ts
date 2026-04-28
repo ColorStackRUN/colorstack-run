@@ -6,6 +6,7 @@ export type EventItem = {
   title: string;
   location: string;
   type: string;
+  statusOverride?: "upcoming" | "past";
   raiderlinkUrl?: string;
   flyerImage?: string;
 };
@@ -43,6 +44,7 @@ export type GalleryImage = {
   src: string;
   alt: string;
   caption?: string;
+  eventId?: string;
 };
 
 export type AlumniMember = {

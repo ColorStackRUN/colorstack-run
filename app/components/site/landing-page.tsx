@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
@@ -8,7 +9,10 @@ import { MotionSection, Reveal, AnimatedCounter } from "./motion";
 type LandingPageProps = { content: SiteContent };
 
 const PARTNERS = [
-  "CoreWeave", "Fiserv", "Jaxel Analytics", "Bloomberg", "Amazon", "Capital One",
+  { name: "CoreWeave", src: "/uploads/Companies/coreweave%20logo.webp" },
+  { name: "Fiserv", src: "/uploads/Companies/Fiserv_logo.svg.png" },
+  { name: "Jasfel Analytics", src: "/uploads/Companies/jasfel-logo.png" },
+  { name: "Wells Fargo", src: "/uploads/Companies/wells%20fargo.png" },
 ];
 
 const ALUMNI_COLORS = [
@@ -27,9 +31,9 @@ const T = {
   surfAlumni:  "bg-white             dark:bg-[#111111]",
   footer:      "bg-gray-950",
   text:        "text-gray-900        dark:text-white",
-  textMuted:   "text-gray-500        dark:text-white/55",
-  textFaint:   "text-gray-400        dark:text-white/40",
-  textDim:     "text-gray-300        dark:text-white/25",
+  textMuted:   "text-gray-700        dark:text-white/55",
+  textFaint:   "text-gray-600        dark:text-white/40",
+  textDim:     "text-gray-500        dark:text-white/25",
   border:      "border-gray-100      dark:border-white/[0.07]",
   border2:     "border-gray-200      dark:border-white/10",
   border3:     "border-gray-300      dark:border-white/20",
@@ -63,6 +67,11 @@ export function LandingPage({ content }: LandingPageProps) {
   const [isDark, setIsDark]     = useState(true);
 
   const { links, events, stats, team, impact, gallery, alumni } = content;
+  const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
+  const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents);
+  const gallerySections = buildGallerySections(gallery, sortedEvents);
+  const [eventsView, setEventsView] = useState<"upcoming" | "past">("upcoming");
+  const activeEvents = eventsView === "upcoming" ? upcomingEvents : pastEvents;
 
   // Initialise from localStorage / system pref after mount (avoids hydration mismatch)
   useEffect(() => {
@@ -238,18 +247,32 @@ export function LandingPage({ content }: LandingPageProps) {
           </Reveal>
 
           <Reveal>
-            <h1 className="text-6xl md:text-8xl lg:text-[96px] font-black tracking-tight leading-[0.95] mb-8">
-              <span className={`block ${T.text}`}>Building the</span>
-              <span className="block bg-gradient-to-r from-red-600 via-red-500 to-rose-500 dark:from-red-500 dark:via-red-400 dark:to-rose-400 bg-clip-text text-transparent">
-                future together.
-              </span>
-            </h1>
+            <div className="mb-8">
+              <div className="flex justify-center mb-6">
+                <Image
+                  src="/colorstack_run_logo_red_4.png"
+                  alt="ColorStack Rutgers Newark logo"
+                  width={84}
+                  height={84}
+                  className={`w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border ${T.border2} shadow-lg shadow-red-500/10`}
+                  priority
+                />
+              </div>
+              <h1 className={`text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.98] mb-4 ${T.text}`}>
+                Welcome to
+              </h1>
+              <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.98] bg-gradient-to-r from-red-600 via-red-500 to-rose-500 dark:from-red-500 dark:via-red-400 dark:to-rose-400 bg-clip-text text-transparent">
+                ColorStack<span className={T.text}>RUN</span>
+              </h2>
+              <p className={`text-base md:text-lg ${T.textDim} mt-4 uppercase tracking-[0.14em] font-semibold`}>
+                Rutgers University–Newark
+              </p>
+            </div>
           </Reveal>
 
           <Reveal>
-            <p className={`text-lg md:text-xl ${T.textMuted} mb-12 max-w-2xl mx-auto leading-relaxed`}>
-              A community for Black and Latinx students in tech at Rutgers–Newark,
-              connecting members to opportunities, mentorship, and each other.
+            <p className={`text-lg md:text-xl ${T.textMuted} mb-12 max-w-3xl mx-auto leading-relaxed`}>
+              The official ColorStack chapter building a stronger pathway for Black and Latinx students in tech through mentorship, career development, and community.
             </p>
           </Reveal>
 
@@ -284,10 +307,10 @@ export function LandingPage({ content }: LandingPageProps) {
           </Reveal>
 
           <Reveal>
-            <div className={`mt-20 pt-10 border-t ${T.border} grid grid-cols-2 md:grid-cols-4 gap-8`}>
+            <div className={`mt-20 pt-10 border-t ${T.border} grid grid-cols-2 md:grid-cols-4 gap-6`}>
               {stats.map((stat) => (
-                <div key={stat.id} className="text-center">
-                  <div className={`text-4xl md:text-5xl font-black ${T.text} mb-1`}>
+                <div key={stat.id} className="text-center px-2">
+                  <div className={`text-xl md:text-2xl font-black tracking-tight ${T.text} mb-1 whitespace-nowrap`}>
                     <AnimatedCounter value={stat.value} />
                   </div>
                   <div className={`text-xs ${T.textDim} uppercase tracking-widest font-medium`}>{stat.label}</div>
@@ -308,7 +331,7 @@ export function LandingPage({ content }: LandingPageProps) {
       <MotionSection id="about" className={`py-28 md:py-36 px-6 lg:px-12 ${T.page}`}>
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-center">
-            <Reveal>
+            <Reveal direction="left">
               <div className="space-y-7">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500">Who We Are</p>
                 <h2 className={`text-5xl md:text-6xl font-black tracking-tight leading-tight ${T.text}`}>
@@ -334,7 +357,7 @@ export function LandingPage({ content }: LandingPageProps) {
               </div>
             </Reveal>
 
-            <Reveal>
+            <Reveal direction="right">
               <div className="grid gap-3">
                 {[
                   {
@@ -384,40 +407,6 @@ export function LandingPage({ content }: LandingPageProps) {
         </div>
       </MotionSection>
 
-      {/* ── Gallery ── */}
-      {gallery.length > 0 && (
-        <MotionSection id="gallery" className={`py-24 px-6 lg:px-12 ${T.pageAlt}`}>
-          <div className="max-w-7xl mx-auto">
-            <Reveal>
-              <div className="text-center mb-14">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Gallery</p>
-                <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>Recent moments</h2>
-              </div>
-            </Reveal>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gallery.map((item) => (
-                <Reveal key={item.id}>
-                  <figure className={`rounded-2xl overflow-hidden border ${T.border} ${T.surf} group cursor-default`}>
-                    <div className="relative aspect-[4/3] overflow-hidden">
-                      <Image
-                        src={item.src}
-                        alt={item.alt}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        sizes="(max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
-                    {item.caption && (
-                      <figcaption className={`px-4 py-3 text-sm ${T.textFaint}`}>{item.caption}</figcaption>
-                    )}
-                  </figure>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </MotionSection>
-      )}
-
       {/* ── Impact / What We Do ── */}
       <MotionSection className={`py-24 px-6 lg:px-12 ${T.page}`}>
         <div className="max-w-7xl mx-auto">
@@ -449,97 +438,97 @@ export function LandingPage({ content }: LandingPageProps) {
       {/* ── Events ── */}
       <MotionSection id="events" className={`py-28 px-6 lg:px-12 ${T.pageAlt}`}>
         <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className={`flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14 border-b ${T.border} pb-8`}>
+          <Reveal direction="left">
+            <div className={`flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8 border-b ${T.border} pb-6`}>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Upcoming Events</p>
-                <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>What&apos;s happening</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-3">Events</p>
+                <h2 className={`text-3xl md:text-4xl font-black tracking-tight ${T.text}`}>
+                  {eventsView === "upcoming" ? "What's happening next" : "Event archive"}
+                </h2>
               </div>
               <p className={`text-sm ${T.textDim}`}>All times Eastern</p>
             </div>
           </Reveal>
 
-          {events.length === 0 ? (
+          <Reveal direction="right">
+            <div className="mb-8 inline-flex rounded-full border border-red-500/20 bg-red-500/5 p-1">
+              <button
+                type="button"
+                onClick={() => setEventsView("upcoming")}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all ${
+                  eventsView === "upcoming"
+                    ? "bg-red-600 text-white shadow-sm"
+                    : `${T.textMuted} hover:text-gray-900 dark:hover:text-white`
+                }`}
+              >
+                Upcoming ({upcomingEvents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setEventsView("past")}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all ${
+                  eventsView === "past"
+                    ? "bg-red-600 text-white shadow-sm"
+                    : `${T.textMuted} hover:text-gray-900 dark:hover:text-white`
+                }`}
+              >
+                Past ({pastEvents.length})
+              </button>
+            </div>
+          </Reveal>
+
+          <EventsCards
+            emptyMessage={eventsView === "upcoming" ? "No upcoming events. Check back soon." : "Past events will appear here after they happen."}
+            events={activeEvents}
+            textColorClasses={T}
+            setActiveFlyer={setActiveFlyer}
+          />
+        </div>
+      </MotionSection>
+
+      {/* ── Gallery ── */}
+      {gallerySections.length > 0 && (
+        <MotionSection id="gallery" className={`py-24 px-6 lg:px-12 ${T.pageAlt}`}>
+          <div className="max-w-7xl mx-auto">
             <Reveal>
-              <p className={`${T.textFaint} text-center py-16`}>No upcoming events. Check back soon.</p>
+              <div className="text-center mb-14">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Gallery</p>
+                <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>Moments by event</h2>
+              </div>
             </Reveal>
-          ) : (
-            <div className="space-y-4">
-              {chunkEvents(events, 3).map((row, rowIndex) => {
-                const colClass =
-                  row.length === 1 ? "md:grid-cols-1 md:max-w-xl mx-auto"
-                  : row.length === 2 ? "md:grid-cols-2 md:max-w-4xl mx-auto"
-                  : "md:grid-cols-3";
-                return (
-                  <div key={`row-${rowIndex}`} className={`grid gap-4 ${colClass}`}>
-                    {row.map((event) => (
-                      <Reveal key={event.id}>
-                        <article className={`group relative overflow-hidden ${T.surf} border ${T.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${T.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 h-full`}>
-                          <div className="flex items-start justify-between mb-5">
-                            <div>
-                              <div className="text-5xl font-black text-red-500 leading-none">{getDayFromDate(event.date)}</div>
-                              <div className={`text-xs ${T.textDim} mt-1 uppercase tracking-widest`}>{formatMonthFromDate(event.date)}</div>
-                            </div>
-                            <span className="px-2.5 py-1 bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 text-red-500 text-xs font-semibold rounded-full">
-                              {event.type}
-                            </span>
+            <div className="space-y-10">
+              {gallerySections.map((section) => (
+                <div key={section.id} className="space-y-4">
+                  <div className="flex flex-col gap-1">
+                    <h3 className={`text-2xl md:text-3xl font-bold tracking-tight ${T.text}`}>{section.title}</h3>
+                    {section.subtitle && <p className={`text-sm ${T.textMuted}`}>{section.subtitle}</p>}
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {section.images.map((item) => (
+                      <Reveal key={item.id}>
+                        <figure className={`rounded-2xl overflow-hidden border ${T.border} ${T.surf} group cursor-default`}>
+                          <div className="relative aspect-[4/3] overflow-hidden">
+                            <Image
+                              src={item.src}
+                              alt={item.alt}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-700"
+                              sizes="(max-width: 1024px) 50vw, 33vw"
+                            />
                           </div>
-
-                          <h3 className={`text-xl font-bold mb-2 group-hover:text-red-500 transition-colors ${T.text}`}>{event.title}</h3>
-                          <p className={`text-sm ${T.textFaint} mb-1`}>{formatTimeRange(event.startTime, event.endTime)}</p>
-                          <p className={`text-sm ${T.textFaint}`}>{event.location}</p>
-
-                          {event.flyerImage && (
-                            <button
-                              type="button"
-                              className={`mt-5 w-full rounded-xl border ${T.border} hover:border-gray-300 dark:hover:border-white/15 overflow-hidden transition-all group/flyer`}
-                              onClick={() => setActiveFlyer({ src: event.flyerImage!, title: event.title })}
-                            >
-                              <div className={`relative h-44 ${T.flyerBg} overflow-hidden`}>
-                                <Image
-                                  src={event.flyerImage}
-                                  alt={`${event.title} flyer`}
-                                  fill
-                                  className="object-contain group-hover/flyer:scale-[1.02] transition-transform duration-500"
-                                  sizes="(max-width: 768px) 90vw, 33vw"
-                                />
-                              </div>
-                            </button>
+                          {item.caption && (
+                            <figcaption className={`px-4 py-3 text-sm ${T.textFaint}`}>{item.caption}</figcaption>
                           )}
-
-                          <div className="flex flex-wrap gap-2 mt-5">
-                            <a
-                              href={buildGoogleCalendarUrl(event)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium ${T.textMuted} hover:text-gray-900 dark:hover:text-white border ${T.border} hover:${T.border2} rounded-full transition-all`}
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                              </svg>
-                              Add to calendar
-                            </a>
-                            {event.raiderlinkUrl && (
-                              <a
-                                href={event.raiderlinkUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-full transition-all"
-                              >
-                                RaiderLink →
-                              </a>
-                            )}
-                          </div>
-                        </article>
+                        </figure>
                       </Reveal>
                     ))}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      </MotionSection>
+          </div>
+        </MotionSection>
+      )}
 
       {/* ── Partners Marquee ── */}
       <section className={`py-16 border-y ${T.border} ${T.page} overflow-hidden`}>
@@ -549,9 +538,15 @@ export function LandingPage({ content }: LandingPageProps) {
         <div className="relative [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="flex gap-16 animate-marquee whitespace-nowrap">
             {[...PARTNERS, ...PARTNERS].map((partner, i) => (
-              <span key={i} className={`${T.textDim} hover:${T.textMuted} text-base font-semibold transition-colors cursor-default tracking-wide`}>
-                {partner}
-              </span>
+              <div key={`${partner.name}-${i}`} className="h-12 w-40 shrink-0 flex items-center justify-center">
+                <Image
+                  src={partner.src}
+                  alt={`${partner.name} logo`}
+                  width={160}
+                  height={48}
+                  className="max-h-10 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -709,18 +704,18 @@ export function LandingPage({ content }: LandingPageProps) {
       )}
 
       {/* ── CTA ── */}
-      <section id="join" className="relative py-28 md:py-36 px-6 lg:px-12 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-950 via-red-900/80 to-[#080808]" />
-        <div className="absolute inset-0 hero-dot-grid opacity-30" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[100px]" />
+      <section id="join" className="relative py-24 md:py-28 px-6 lg:px-12 overflow-hidden border-t border-white/10">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#180f12] via-[#120e12] to-[#0a0a0a]" />
+        <div className="absolute inset-0 hero-dot-grid opacity-20" />
+        <div className="absolute top-[-12%] right-[-5%] w-[420px] h-[420px] bg-red-500/8 rounded-full blur-[120px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400 mb-6">Get Involved</p>
-            <h2 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-300/90 mb-5">Get Involved</p>
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-5 leading-tight text-white">
               Ready to build your future?
             </h2>
-            <p className="text-xl text-white/60 mb-12 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/70 mb-10 max-w-2xl mx-auto leading-relaxed">
               Join a community that invests in you. Grow your network, build your skills,
               and create impact — together.
             </p>
@@ -729,13 +724,13 @@ export function LandingPage({ content }: LandingPageProps) {
                 href={links.join}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-4 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-2xl hover:scale-[1.03] text-base"
+                className="px-7 py-3.5 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-lg hover:shadow-red-900/20 hover:scale-[1.02] text-base"
               >
                 Join on RaiderLink
               </a>
               <a
                 href={`mailto:${links.email}`}
-                className="px-8 py-4 border border-white/30 hover:border-white/60 text-white font-semibold rounded-full hover:bg-white/08 transition-all text-base"
+                className="px-7 py-3.5 border border-white/25 hover:border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-all text-base"
               >
                 Contact Us
               </a>
@@ -832,6 +827,106 @@ export function LandingPage({ content }: LandingPageProps) {
   );
 }
 
+function EventsCards({
+  emptyMessage,
+  events,
+  textColorClasses,
+  setActiveFlyer,
+}: {
+  emptyMessage: string;
+  events: SiteContent["events"];
+  textColorClasses: typeof T;
+  setActiveFlyer: (value: { src: string; title: string } | null) => void;
+}) {
+  return (
+    <>
+      {events.length === 0 ? (
+        <p className={`${textColorClasses.textFaint} text-center py-12`}>{emptyMessage}</p>
+      ) : (
+        <motion.div
+          key={`events-${events[0]?.id ?? "empty"}-${events.length}`}
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-4"
+        >
+          {chunkEvents(events, 3).map((row, rowIndex) => {
+            const colClass =
+              row.length === 1 ? "md:grid-cols-1 md:max-w-xl mx-auto"
+              : row.length === 2 ? "md:grid-cols-2 md:max-w-4xl mx-auto"
+              : "md:grid-cols-3";
+            return (
+              <div key={`events-row-${rowIndex}`} className={`grid gap-4 ${colClass}`}>
+                {row.map((event) => (
+                  <article key={event.id} className={`group relative overflow-hidden ${textColorClasses.surf} border ${textColorClasses.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${textColorClasses.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 h-full`}>
+                    <div className="flex items-start justify-between mb-5">
+                      <div>
+                        <div className="text-5xl font-black text-red-500 leading-none">{getDayFromDate(event.date)}</div>
+                        <div className={`text-xs ${textColorClasses.textDim} mt-1 uppercase tracking-widest`}>{formatMonthFromDate(event.date)}</div>
+                      </div>
+                      <span className="px-2.5 py-1 bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 text-red-500 text-xs font-semibold rounded-full">
+                        {event.type}
+                      </span>
+                    </div>
+
+                    <h3 className={`text-xl font-bold mb-2 group-hover:text-red-500 transition-colors ${textColorClasses.text}`}>{event.title}</h3>
+                    <p className={`text-sm ${textColorClasses.textFaint} mb-1`}>{formatTimeRange(event.startTime, event.endTime)}</p>
+                    <p className={`text-sm ${textColorClasses.textFaint}`}>{event.location}</p>
+
+                    {event.flyerImage && (
+                      <button
+                        type="button"
+                        className={`mt-5 w-full rounded-xl border ${textColorClasses.border} hover:border-gray-300 dark:hover:border-white/15 overflow-hidden transition-all group/flyer`}
+                        onClick={() => setActiveFlyer({ src: event.flyerImage!, title: event.title })}
+                      >
+                        <div className={`relative h-44 ${textColorClasses.flyerBg} overflow-hidden`}>
+                          <Image
+                            src={event.flyerImage}
+                            alt={`${event.title} flyer`}
+                            fill
+                            className="object-contain group-hover/flyer:scale-[1.02] transition-transform duration-500"
+                            sizes="(max-width: 768px) 90vw, 33vw"
+                          />
+                        </div>
+                      </button>
+                    )}
+
+                    {resolveEventStatus(event) === "upcoming" && (
+                      <div className="flex flex-wrap gap-2 mt-5">
+                        <a
+                          href={buildGoogleCalendarUrl(event)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium ${textColorClasses.textMuted} hover:text-gray-900 dark:hover:text-white border ${textColorClasses.border} hover:${textColorClasses.border2} rounded-full transition-all`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                          </svg>
+                          Add to calendar
+                        </a>
+                        {event.raiderlinkUrl && (
+                          <a
+                            href={event.raiderlinkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-full transition-all"
+                          >
+                            RaiderLink →
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            );
+          })}
+        </motion.div>
+      )}
+    </>
+  );
+}
+
 /* ── Inline icons ── */
 function LinkedInIcon() {
   return (
@@ -888,6 +983,85 @@ function to12Hour(time: string) {
   if (Number.isNaN(hour) || Number.isNaN(minute)) return time;
   const meridiem = hour >= 12 ? "PM" : "AM";
   return `${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")} ${meridiem}`;
+}
+function splitEventsByStatus(events: SiteContent["events"]) {
+  const upcomingEvents: SiteContent["events"] = [];
+  const pastEvents: SiteContent["events"] = [];
+  for (const event of events) {
+    if (resolveEventStatus(event) === "past") {
+      pastEvents.push(event);
+    } else {
+      upcomingEvents.push(event);
+    }
+  }
+  return { upcomingEvents, pastEvents };
+}
+function resolveEventStatus(event: SiteContent["events"][number]) {
+  if (event.statusOverride) return event.statusOverride;
+  const eventEnd = getEventEndDate(event);
+  if (!eventEnd) return "upcoming";
+  return eventEnd.getTime() < Date.now() ? "past" : "upcoming";
+}
+function getEventEndDate(event: SiteContent["events"][number]) {
+  const parsed = parseDateInput(event.date);
+  if (!parsed) return null;
+  const [hourText, minuteText] = event.endTime.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return new Date(parsed.year, parsed.month - 1, parsed.day, 23, 59, 59, 999);
+  }
+  return new Date(parsed.year, parsed.month - 1, parsed.day, hour, minute, 0, 0);
+}
+function compareEventDateTime(a: SiteContent["events"][number], b: SiteContent["events"][number]) {
+  const aTime = getEventSortTime(a);
+  const bTime = getEventSortTime(b);
+  return aTime - bTime;
+}
+function getEventSortTime(event: SiteContent["events"][number]) {
+  const parsed = parseDateInput(event.date);
+  if (!parsed) return Number.MAX_SAFE_INTEGER;
+  const [hourText, minuteText] = event.startTime.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const resolvedHour = Number.isNaN(hour) ? 0 : hour;
+  const resolvedMinute = Number.isNaN(minute) ? 0 : minute;
+  return new Date(parsed.year, parsed.month - 1, parsed.day, resolvedHour, resolvedMinute, 0, 0).getTime();
+}
+function buildGallerySections(gallery: SiteContent["gallery"], events: SiteContent["events"]) {
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  const grouped = new Map<string, SiteContent["gallery"]>();
+  const ungrouped: SiteContent["gallery"] = [];
+
+  for (const item of gallery) {
+    if (item.eventId && eventById.has(item.eventId)) {
+      const existing = grouped.get(item.eventId) ?? [];
+      existing.push(item);
+      grouped.set(item.eventId, existing);
+    } else {
+      ungrouped.push(item);
+    }
+  }
+
+  const eventSections = events
+    .filter((event) => (grouped.get(event.id)?.length ?? 0) > 0)
+    .map((event) => ({
+      id: `event-gallery-${event.id}`,
+      title: event.title,
+      subtitle: `${formatMonthFromDate(event.date)} · ${event.location}`,
+      images: grouped.get(event.id) ?? [],
+    }));
+
+  if (ungrouped.length > 0) {
+    eventSections.push({
+      id: "event-gallery-ungrouped",
+      title: "Recent Moments",
+      subtitle: "",
+      images: ungrouped,
+    });
+  }
+
+  return eventSections;
 }
 function parseDateInput(value: string) {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);

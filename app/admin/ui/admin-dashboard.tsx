@@ -18,6 +18,7 @@ const destructiveLinkClass =
 const sectionClass =
   "rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_10px_35px_rgba(15,23,42,0.06)] space-y-5";
 const EVENT_TYPE_OPTIONS = ["Workshop", "Social", "Panel", "Info Session"];
+const EVENT_STATUS_OPTIONS = ["auto", "upcoming", "past"] as const;
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   const hour = Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
@@ -216,6 +217,22 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                   />
                   <LabeledInput label="Location" value={event.location} onChange={(value) => updateEvent(content, event.id, { location: value }, update)} />
                   <LabeledDropdown
+                    label="Status"
+                    value={event.statusOverride ?? "auto"}
+                    options={[...EVENT_STATUS_OPTIONS]}
+                    onChange={(value) => {
+                      updateEvent(content, event.id, {
+                        statusOverride:
+                          value === "auto"
+                            ? undefined
+                            : (value as SiteContent["events"][number]["statusOverride"]),
+                      }, update);
+                    }}
+                    formatOptionLabel={(option) =>
+                      option === "auto" ? "Auto (date-based)" : option[0].toUpperCase() + option.slice(1)
+                    }
+                  />
+                  <LabeledDropdown
                     label="Type"
                     value={customTypeOpen[event.id] ? "__custom" : event.type}
                     options={[
@@ -352,6 +369,20 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                   <div className="grid md:grid-cols-2 gap-3">
                     <LabeledInput label="Alt Text" value={image.alt} onChange={(value) => updateGallery(content, image.id, { alt: value }, update)} />
                     <LabeledInput label="Caption" value={image.caption ?? ""} onChange={(value) => updateGallery(content, image.id, { caption: value }, update)} />
+                    <LabeledDropdown
+                      label="Linked Event"
+                      value={image.eventId ?? "__none"}
+                      options={[
+                        "__none",
+                        ...content.events.map((event) => event.id),
+                      ]}
+                      onChange={(value) => updateGallery(content, image.id, { eventId: value === "__none" ? undefined : value }, update)}
+                      formatOptionLabel={(option) =>
+                        option === "__none"
+                          ? "None (Recent Moments)"
+                          : content.events.find((event) => event.id === option)?.title ?? option
+                      }
+                    />
                   </div>
                   <ImageUploadField
                     label="Gallery Image"

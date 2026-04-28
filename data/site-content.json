@@ -46,6 +46,17 @@
   ],
   "events": [
     {
+      "id": "event-hackfest-2025",
+      "date": "2025-11-14",
+      "startTime": "00:00",
+      "endTime": "23:59",
+      "title": "HackFest 2025",
+      "location": "Rutgers-Newark",
+      "type": "Hackathon",
+      "statusOverride": "past",
+      "flyerImage": "/uploads/events/c8eeb662-9a7b-40f9-b840-c53d58429acd.jpg"
+    },
+    {
       "id": "event-tech-interview",
       "date": "2026-04-29",
       "startTime": "14:30",
@@ -95,6 +106,33 @@
       "linkedin": "https://www.linkedin.com/in/obianuju-enekebe/"
     }
   ],
-  "gallery": [],
-  "alumni": []
+  "gallery": [
+    {
+      "id": "6885e3d5-9baa-4014-8416-d096bad01e33",
+      "src": "/uploads/gallery/128f7adb-0362-4c0b-8df4-b9d82533a33a.jpg",
+      "alt": "HackFest 2025 Winners",
+      "caption": "HackFest 2025 1st Place Team",
+      "eventId": "event-hackfest-2025"
+    }
+  ],
+  "alumni": [
+    {
+      "id": "ed28daa0-c6d8-4d00-b16a-ceedcbd9f02a",
+      "name": "Nicholas Rios",
+      "role": "Software Engineer",
+      "company": "JP Morgan Chase",
+      "graduationYear": "2024",
+      "linkedin": "https://www.linkedin.com/in/nicholas-rios/",
+      "image": "/uploads/alumni/db2f3f0e-9699-4b2f-a7f1-d7b39e27945a.jpg"
+    },
+    {
+      "id": "5405bc6e-417d-462c-a946-fde19f178490",
+      "name": "Omar Elbaz",
+      "role": "Software Engineer",
+      "company": "Slack",
+      "graduationYear": "2024",
+      "linkedin": "https://www.linkedin.com/in/omar-elbaz-/",
+      "image": "/uploads/alumni/2dd0e5aa-3693-469a-bb57-33b546d30e78.jpg"
+    }
+  ]
 }

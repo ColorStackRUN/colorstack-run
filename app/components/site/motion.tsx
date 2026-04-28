@@ -4,9 +4,14 @@ import { motion, useReducedMotion, useInView, type Variants } from "framer-motio
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const revealVariants: Variants = {
-  hidden: { opacity: 0, y: 32 },
+  hidden: (direction: RevealDirection = "up") => ({
+    opacity: 0,
+    x: direction === "left" ? -32 : direction === "right" ? 32 : 0,
+    y: direction === "up" ? 32 : 0,
+  }),
   visible: {
     opacity: 1,
+    x: 0,
     y: 0,
     transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
   },
@@ -47,15 +52,17 @@ export function MotionSection({ children, className, id }: MotionSectionProps) {
 type RevealProps = {
   children: ReactNode;
   className?: string;
+  direction?: RevealDirection;
 };
+type RevealDirection = "up" | "left" | "right";
 
-export function Reveal({ children, className }: RevealProps) {
+export function Reveal({ children, className, direction = "up" }: RevealProps) {
   const reduceMotion = useReducedMotion();
   if (reduceMotion) {
     return <div className={className}>{children}</div>;
   }
   return (
-    <motion.div className={className} variants={revealVariants}>
+    <motion.div className={className} custom={direction} variants={revealVariants}>
       {children}
     </motion.div>
   );
