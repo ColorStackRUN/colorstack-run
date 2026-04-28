@@ -1,0 +1,877 @@
+"use client";
+
+import { useEffect, useId, useMemo, useState } from "react";
+import Cropper, { type Area, type Point } from "react-easy-crop";
+import type { SiteContent } from "@/app/lib/content-types";
+
+type AdminDashboardProps = {
+  initialContent: SiteContent;
+};
+
+const buttonClass =
+  "px-4 py-2 rounded-xl border border-gray-700 bg-gray-900 text-white hover:bg-black transition-all shadow-sm hover:shadow active:scale-[0.99]";
+const primaryButtonClass =
+  "px-4 py-2 rounded-xl bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700 transition-all shadow-lg shadow-red-700/20 disabled:opacity-70 active:scale-[0.99]";
+const destructiveLinkClass =
+  "text-sm font-medium text-red-600 hover:text-red-700 hover:underline underline-offset-2";
+
+const sectionClass =
+  "rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_10px_35px_rgba(15,23,42,0.06)] space-y-5";
+const EVENT_TYPE_OPTIONS = ["Workshop", "Social", "Panel", "Info Session"];
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? "00" : "30";
+  return `${String(hour).padStart(2, "0")}:${minute}`;
+});
+
+export function AdminDashboard({ initialContent }: AdminDashboardProps) {
+  const [content, setContent] = useState<SiteContent>(initialContent);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [activeSection, setActiveSection] = useState("links");
+  const [dirty, setDirty] = useState(false);
+  const [customTypeOpen, setCustomTypeOpen] = useState<Record<string, boolean>>({});
+
+  const hasGallery = useMemo(() => content.gallery.length > 0, [content.gallery.length]);
+  const hasAlumni = useMemo(() => content.alumni.length > 0, [content.alumni.length]);
+
+  const update = (next: SiteContent) => {
+    setContent(next);
+    setDirty(true);
+  };
+
+  const showToast = (type: "success" | "error", text: string) => {
+    setToast({ type, text });
+    window.setTimeout(() => setToast(null), 2800);
+  };
+
+  const onSave = async () => {
+    setSaving(true);
+    const response = await fetch("/api/admin/content", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(content),
+    });
+    setSaving(false);
+    if (!response.ok) {
+      showToast("error", "Failed to save changes.");
+      return;
+    }
+    setDirty(false);
+    showToast("success", "Changes saved and published.");
+  };
+
+  const onLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  };
+
+  const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("scope", scope);
+
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Upload failed.");
+    }
+
+    const body = (await response.json()) as { url: string };
+    return body.url;
+  };
+
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  useEffect(() => {
+    const sectionIds = ["links", "events", "team", "gallery", "alumni"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) {
+          setActiveSection(visible.target.id);
+        }
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0.25, 0.5, 0.8] }
+    );
+
+    sectionIds.forEach((id) => {
+      const element = document.getElementById(`admin-${id}`);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [hasGallery, hasAlumni]);
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-6 py-8 md:px-10">
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-[220px_minmax(0,1fr)] gap-6">
+        <aside className="hidden lg:block sticky top-6 self-start">
+          <nav className="rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur p-3 shadow-sm">
+            <p className="px-3 py-2 text-xs uppercase tracking-[0.14em] font-semibold text-gray-500">Sections</p>
+            <AdminNavItem href="#admin-links" label="Chapter Links" active={activeSection === "links"} />
+            <AdminNavItem href="#admin-events" label="Events" active={activeSection === "events"} />
+            <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
+            <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
+            <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
+          </nav>
+        </aside>
+
+        <div className="space-y-8">
+        <header className="rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_20px_45px_rgba(185,28,28,0.09)]">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="inline-flex text-xs uppercase tracking-[0.14em] font-semibold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded-full mb-3">
+                Content Management
+              </p>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">ColorStackRUN Admin</h1>
+              <p className="text-gray-600 mt-1">Update events, team profiles, and gallery content from one place.</p>
+            </div>
+            <div className="flex gap-3">
+              <button className={buttonClass} onClick={onLogout}>Log out</button>
+              <button className={primaryButtonClass} onClick={onSave} disabled={saving}>
+                {saving ? "Saving..." : "Save & Publish"}
+              </button>
+            </div>
+          </div>
+          {dirty && <p className="mt-4 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 inline-block">You have unsaved changes.</p>}
+        </header>
+
+        <section id="admin-links" className={sectionClass}>
+          <h2 className="text-2xl font-semibold text-gray-900">Chapter Links</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <LabeledInput label="Instagram" value={content.links.instagram} onChange={(value) => update({ ...content, links: { ...content.links, instagram: value } })} />
+            <LabeledInput label="LinkedIn" value={content.links.linkedin} onChange={(value) => update({ ...content, links: { ...content.links, linkedin: value } })} />
+            <LabeledInput label="Join Link (RaiderLink)" value={content.links.join} onChange={(value) => update({ ...content, links: { ...content.links, join: value } })} />
+            <LabeledInput label="Email" value={content.links.email} onChange={(value) => update({ ...content, links: { ...content.links, email: value } })} />
+          </div>
+        </section>
+
+        <section id="admin-events" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Events</h2>
+            <button
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  events: [
+                    ...content.events,
+                    {
+                      id: crypto.randomUUID(),
+                      title: "New Event",
+                      date: new Date().toISOString().slice(0, 10),
+                      startTime: "18:00",
+                      endTime: "19:00",
+                      location: "TBD",
+                      type: "Workshop",
+                      raiderlinkUrl: content.links.join,
+                    },
+                  ],
+                })
+              }
+            >
+              Add Event
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {content.events.map((event) => (
+              <div key={event.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                <div className="flex justify-end">
+                  <button
+                    className={destructiveLinkClass}
+                    onClick={() => update({ ...content, events: content.events.filter((e) => e.id !== event.id) })}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <LabeledInput label="Title" value={event.title} onChange={(value) => updateEvent(content, event.id, { title: value }, update)} />
+                  <LabeledDateInput label="Date" value={event.date} onChange={(value) => updateEvent(content, event.id, { date: value }, update)} />
+                  <LabeledTimeInput
+                    label="Start Time (ET)"
+                    value={event.startTime}
+                    onChange={(value) => updateEvent(content, event.id, { startTime: value }, update)}
+                    suggestions={TIME_OPTIONS}
+                  />
+                  <LabeledTimeInput
+                    label="End Time (ET)"
+                    value={event.endTime}
+                    onChange={(value) => updateEvent(content, event.id, { endTime: value }, update)}
+                    suggestions={TIME_OPTIONS}
+                  />
+                  <LabeledInput label="Location" value={event.location} onChange={(value) => updateEvent(content, event.id, { location: value }, update)} />
+                  <LabeledDropdown
+                    label="Type"
+                    value={customTypeOpen[event.id] ? "__custom" : event.type}
+                    options={[
+                      ...EVENT_TYPE_OPTIONS,
+                      ...(!EVENT_TYPE_OPTIONS.includes(event.type) ? [event.type] : []),
+                      "__custom",
+                    ]}
+                    onChange={(value) => {
+                      if (value === "__custom") {
+                        setCustomTypeOpen((previous) => ({ ...previous, [event.id]: true }));
+                        if (EVENT_TYPE_OPTIONS.includes(event.type)) {
+                          updateEvent(content, event.id, { type: "" }, update);
+                        }
+                        return;
+                      }
+                      setCustomTypeOpen((previous) => ({ ...previous, [event.id]: false }));
+                      updateEvent(content, event.id, { type: value }, update);
+                    }}
+                    formatOptionLabel={(option) => (option === "__custom" ? "Custom..." : option)}
+                  />
+                  <LabeledInput label="RaiderLink URL" value={event.raiderlinkUrl ?? ""} onChange={(value) => updateEvent(content, event.id, { raiderlinkUrl: value }, update)} />
+                </div>
+                {customTypeOpen[event.id] && (
+                  <LabeledInput
+                    label="Custom Type"
+                    value={event.type}
+                    onChange={(value) => updateEvent(content, event.id, { type: value }, update)}
+                  />
+                )}
+                <ImageUploadField
+                  label="Event Flyer"
+                  currentUrl={event.flyerImage}
+                  onUpload={async (file) => {
+                    const url = await uploadImage(file, "events");
+                    updateEvent(content, event.id, { flyerImage: url }, update);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="admin-team" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Executive Board</h2>
+            <button
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  team: [
+                    ...content.team,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "New Member",
+                      role: "Role",
+                      bio: "Short bio",
+                      linkedin: "https://www.linkedin.com/",
+                    },
+                  ],
+                })
+              }
+            >
+              Add Member
+            </button>
+          </div>
+          <div className="space-y-6">
+            {content.team.map((member) => (
+              <div key={member.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                <div className="flex justify-end">
+                  <button
+                    className={destructiveLinkClass}
+                    onClick={() => update({ ...content, team: content.team.filter((m) => m.id !== member.id) })}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <LabeledInput label="Name" value={member.name} onChange={(value) => updateMember(content, member.id, { name: value }, update)} />
+                  <LabeledInput label="Role" value={member.role} onChange={(value) => updateMember(content, member.id, { role: value }, update)} />
+                  <LabeledInput label="LinkedIn URL" value={member.linkedin} onChange={(value) => updateMember(content, member.id, { linkedin: value }, update)} />
+                </div>
+                <LabeledTextArea label="Bio" value={member.bio} onChange={(value) => updateMember(content, member.id, { bio: value }, update)} />
+                <ImageUploadField
+                  label="Portrait Image"
+                  currentUrl={member.image}
+                  cropShape="round"
+                  onUpload={async (file) => {
+                    const url = await uploadImage(file, "team");
+                    updateMember(content, member.id, { image: url }, update);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="admin-gallery" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Events Gallery</h2>
+            <button
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  gallery: [
+                    ...content.gallery,
+                    {
+                      id: crypto.randomUUID(),
+                      src: "",
+                      alt: "Gallery image",
+                      caption: "",
+                    },
+                  ],
+                })
+              }
+            >
+              Add Gallery Item
+            </button>
+          </div>
+
+          {hasGallery ? (
+            <div className="space-y-6">
+              {content.gallery.map((image) => (
+                <div key={image.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                  <div className="flex justify-end">
+                    <button
+                    className={destructiveLinkClass}
+                      onClick={() => update({ ...content, gallery: content.gallery.filter((g) => g.id !== image.id) })}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <LabeledInput label="Alt Text" value={image.alt} onChange={(value) => updateGallery(content, image.id, { alt: value }, update)} />
+                    <LabeledInput label="Caption" value={image.caption ?? ""} onChange={(value) => updateGallery(content, image.id, { caption: value }, update)} />
+                  </div>
+                  <ImageUploadField
+                    label="Gallery Image"
+                    currentUrl={image.src}
+                    onUpload={async (file) => {
+                      const url = await uploadImage(file, "gallery");
+                      updateGallery(content, image.id, { src: url }, update);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No gallery images yet. Add one to start populating the public gallery section.</p>
+          )}
+        </section>
+        <section id="admin-alumni" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Alumni Network</h2>
+              <p className="text-sm text-gray-500 mt-1">Alumni appear on the public site when at least one entry is added.</p>
+            </div>
+            <button
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  alumni: [
+                    ...content.alumni,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "Alumni Name",
+                      role: "Software Engineer",
+                      company: "Company",
+                      graduationYear: new Date().getFullYear().toString(),
+                      linkedin: "https://www.linkedin.com/",
+                    },
+                  ],
+                })
+              }
+            >
+              Add Alumni
+            </button>
+          </div>
+
+          {hasAlumni ? (
+            <div className="space-y-6">
+              {content.alumni.map((member) => (
+                <div key={member.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                  <div className="flex justify-end">
+                    <button
+                      className={destructiveLinkClass}
+                      onClick={() => update({ ...content, alumni: content.alumni.filter((a) => a.id !== member.id) })}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <LabeledInput label="Name" value={member.name} onChange={(value) => updateAlumni(content, member.id, { name: value }, update)} />
+                    <LabeledInput label="Current Role / Title" value={member.role} onChange={(value) => updateAlumni(content, member.id, { role: value }, update)} />
+                    <LabeledInput label="Company" value={member.company} onChange={(value) => updateAlumni(content, member.id, { company: value }, update)} />
+                    <LabeledInput label="Graduation Year" value={member.graduationYear} onChange={(value) => updateAlumni(content, member.id, { graduationYear: value }, update)} />
+                    <LabeledInput label="LinkedIn URL" value={member.linkedin ?? ""} onChange={(value) => updateAlumni(content, member.id, { linkedin: value }, update)} />
+                  </div>
+                  <ImageUploadField
+                    label="Headshot / Photo"
+                    currentUrl={member.image}
+                    cropShape="rect"
+                    onUpload={async (file) => {
+                      const url = await uploadImage(file, "alumni");
+                      updateAlumni(content, member.id, { image: url }, update);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No alumni added yet. Add one to activate the Alumni Network section on the public site.</p>
+          )}
+        </section>
+
+        </div>
+      </div>
+      <Toast toast={toast} />
+    </main>
+  );
+}
+
+function AdminNavItem({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <a
+      href={href}
+      className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+        active ? "bg-red-50 text-red-700 border border-red-100" : "text-gray-700 hover:bg-gray-50"
+      }`}
+    >
+      {label}
+    </a>
+  );
+}
+
+function Toast({ toast }: { toast: { type: "success" | "error"; text: string } | null }) {
+  if (!toast) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      <div
+        className={`px-4 py-3 rounded-xl shadow-lg border text-sm font-medium ${
+          toast.type === "success"
+            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+            : "bg-red-50 border-red-200 text-red-700"
+        }`}
+      >
+        {toast.text}
+      </div>
+    </div>
+  );
+}
+
+function LabeledInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <input
+        className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+function LabeledDateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <input
+        type="date"
+        className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+        value={toDateInputValue(value)}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+function LabeledTimeInput({
+  label,
+  value,
+  suggestions,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  suggestions?: string[];
+  onChange: (value: string) => void;
+}) {
+  const datalistId = useId();
+  const [draft, setDraft] = useState(formatTimeOption(value));
+  const resolvedSuggestions = suggestions ?? [];
+
+  useEffect(() => {
+    setDraft(formatTimeOption(value));
+  }, [value]);
+
+  const onBlur = () => {
+    const parsed = parseTimeInput(draft);
+    if (!parsed) {
+      setDraft(formatTimeOption(value));
+      return;
+    }
+    onChange(parsed);
+    setDraft(formatTimeOption(parsed));
+  };
+
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <input
+        list={datalistId}
+        className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+        value={draft}
+        placeholder="e.g. 3:50 PM"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={onBlur}
+      />
+      <datalist id={datalistId}>
+        {resolvedSuggestions.map((option) => (
+          <option key={option} value={formatTimeOption(option)} />
+        ))}
+      </datalist>
+    </label>
+  );
+}
+
+function LabeledDropdown({
+  label,
+  value,
+  options,
+  onChange,
+  formatOptionLabel,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  formatOptionLabel?: (value: string) => string;
+}) {
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <div className="relative">
+        <select
+          className="w-full appearance-none rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 pr-10 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {formatOptionLabel ? formatOptionLabel(option) : option}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">▾</span>
+      </div>
+    </label>
+  );
+}
+
+function LabeledTextArea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <textarea
+        className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 min-h-24 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+function ImageUploadField({
+  label,
+  currentUrl,
+  cropShape = "rect",
+  onUpload,
+}: {
+  label: string;
+  currentUrl?: string;
+  cropShape?: "rect" | "round";
+  onUpload: (file: File) => Promise<void>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
+  const [sourceFileName, setSourceFileName] = useState("image");
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const openCropper = (file: File) => {
+    const objectUrl = URL.createObjectURL(file);
+    setSourceImageUrl(objectUrl);
+    setSourceFileName(file.name || "image");
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  };
+
+  const closeCropper = () => {
+    if (sourceImageUrl) {
+      URL.revokeObjectURL(sourceImageUrl);
+    }
+    setSourceImageUrl(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-gray-700">{label}</p>
+      {currentUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={currentUrl} alt={label} className="w-28 h-28 rounded-xl object-cover border border-gray-200 shadow-sm" />
+      )}
+      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300/90 bg-white shadow-sm hover:bg-gray-50 cursor-pointer transition-colors w-fit text-sm font-medium text-gray-700">
+        <span>{uploading ? "Uploading..." : "Upload Image"}</span>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (cropShape === "round") {
+              openCropper(file);
+              e.target.value = "";
+              return;
+            }
+            setUploading(true);
+            try {
+              await onUpload(file);
+            } finally {
+              setUploading(false);
+            }
+          }}
+        />
+      </label>
+      {sourceImageUrl && (
+        <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Adjust portrait crop</h3>
+              <button
+                type="button"
+                onClick={closeCropper}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="relative h-[340px] w-full rounded-xl overflow-hidden bg-gray-100">
+              <Cropper
+                image={sourceImageUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape={cropShape}
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
+              />
+            </div>
+
+            <label className="block text-sm text-gray-700">
+              <span className="font-medium">Zoom</span>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.01}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full mt-2"
+              />
+            </label>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeCropper}
+                className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700 transition-all disabled:opacity-70"
+                disabled={!croppedAreaPixels || uploading}
+                onClick={async () => {
+                  if (!sourceImageUrl || !croppedAreaPixels) return;
+                  setUploading(true);
+                  try {
+                    const croppedFile = await getCroppedFile(sourceImageUrl, croppedAreaPixels, sourceFileName, "image/jpeg");
+                    await onUpload(croppedFile);
+                    closeCropper();
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              >
+                {uploading ? "Saving..." : "Use cropped image"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function updateEvent(content: SiteContent, id: string, patch: Partial<SiteContent["events"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    events: content.events.map((event) => (event.id === id ? { ...event, ...patch } : event)),
+  });
+}
+
+function updateMember(content: SiteContent, id: string, patch: Partial<SiteContent["team"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    team: content.team.map((member) => (member.id === id ? { ...member, ...patch } : member)),
+  });
+}
+
+function updateGallery(content: SiteContent, id: string, patch: Partial<SiteContent["gallery"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    gallery: content.gallery.map((image) => (image.id === id ? { ...image, ...patch } : image)),
+  });
+}
+
+function updateAlumni(content: SiteContent, id: string, patch: Partial<SiteContent["alumni"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    alumni: content.alumni.map((member) => (member.id === id ? { ...member, ...patch } : member)),
+  });
+}
+
+function toDateInputValue(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function formatTimeOption(value: string) {
+  const [hourPart, minutePart] = value.split(":");
+  const hour = Number(hourPart);
+  const minute = Number(minutePart);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return value;
+  const meridiem = hour >= 12 ? "PM" : "AM";
+  const normalizedHour = hour % 12 === 0 ? 12 : hour % 12;
+  const normalizedMinute = String(minute).padStart(2, "0");
+  return `${normalizedHour}:${normalizedMinute} ${meridiem} EST`;
+}
+
+function parseTimeInput(input: string) {
+  const trimmed = input.trim().toUpperCase().replace("EST", "").trim();
+  if (!trimmed) return null;
+
+  const twelveHourMatch = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (twelveHourMatch) {
+    const hourRaw = Number(twelveHourMatch[1]);
+    const minute = Number(twelveHourMatch[2]);
+    const meridiem = twelveHourMatch[3];
+    if (hourRaw < 1 || hourRaw > 12 || minute < 0 || minute > 59) return null;
+    const hour24 = meridiem === "PM" ? (hourRaw % 12) + 12 : hourRaw % 12;
+    return `${String(hour24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  const twentyFourHourMatch = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1]);
+    const minute = Number(twentyFourHourMatch[2]);
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  return null;
+}
+
+async function getCroppedFile(
+  imageSrc: string,
+  cropPixels: Area,
+  fileName: string,
+  mimeType: string
+) {
+  const image = await loadImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  canvas.width = cropPixels.width;
+  canvas.height = cropPixels.height;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Could not create canvas context.");
+  }
+
+  ctx.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    cropPixels.width,
+    cropPixels.height
+  );
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, mimeType, 0.92);
+  });
+
+  if (!blob) {
+    throw new Error("Failed to create cropped image.");
+  }
+
+  const extension = mimeType.split("/")[1] ?? "jpg";
+  const baseName = fileName.replace(/\.[^/.]+$/, "");
+  return new File([blob], `${baseName}-cropped.${extension}`, { type: mimeType });
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(image);
+    image.onerror = (error) => reject(error);
+    image.src = src;
+  });
+}

@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
+/* Make dark: apply when an ancestor has the .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #080808;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -12,15 +15,121 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Floating orbs ── */
+@keyframes floatSoft {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%       { transform: translate3d(0, -22px, 0); }
+}
+.animate-float-soft {
+  animation: floatSoft 14s ease-in-out infinite;
+}
+.animate-float-soft-delayed {
+  animation: floatSoft 18s ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+.animate-float-slow {
+  animation: floatSoft 22s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+/* ── Particle drift ── */
+@keyframes particleDrift {
+  0%   { transform: translateY(14px) scale(1); opacity: 0; }
+  15%  { opacity: 0.45; }
+  85%  { opacity: 0.35; }
+  100% { transform: translateY(-30px) scale(1.14); opacity: 0; }
+}
+.particle-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.particle-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(220, 38, 38, 0.55);
+  animation: particleDrift 10s ease-in-out infinite;
+}
+.particle-dot:nth-child(1)  { top: 18%; left: 12%; animation-delay: 0s; }
+.particle-dot:nth-child(2)  { top: 28%; left: 30%; animation-delay: 1s; }
+.particle-dot:nth-child(3)  { top: 62%; left: 18%; animation-delay: 1.8s; }
+.particle-dot:nth-child(4)  { top: 40%; left: 78%; animation-delay: 0.4s; }
+.particle-dot:nth-child(5)  { top: 74%; left: 72%; animation-delay: 2.4s; }
+.particle-dot:nth-child(6)  { top: 24%; left: 56%; animation-delay: 1.2s; }
+.particle-dot:nth-child(7)  { top: 52%; left: 86%; animation-delay: 3s; }
+.particle-dot:nth-child(8)  { top: 70%; left: 40%; animation-delay: 3.8s; }
+.particle-dot:nth-child(9)  { top: 14%; left: 66%; animation-delay: 0.8s; }
+.particle-dot:nth-child(10) { top: 84%; left: 24%; animation-delay: 2.9s; }
+.particle-dot:nth-child(11) { top: 34%; left: 6%;  animation-delay: 1.5s; }
+.particle-dot:nth-child(12) { top: 58%; left: 52%; animation-delay: 2.2s; }
+.particle-dot:nth-child(13) { top: 76%; left: 90%; animation-delay: 4s; }
+.particle-dot:nth-child(14) { top: 10%; left: 44%; animation-delay: 2.6s; }
+
+/* ── Partner marquee ── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+  will-change: transform;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ── Hero dot grid ── */
+.hero-dot-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.045) 1px, transparent 0);
+  background-size: 36px 36px;
+}
+.light .hero-dot-grid,
+.hero-dot-grid.light {
+  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.055) 1px, transparent 0);
+}
+
+/* ── Shimmer on card hover ── */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(200%) skewX(-12deg); }
+}
+.card-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  transform: translateX(-100%) skewX(-12deg);
+}
+.card-shimmer:hover::after {
+  animation: shimmer 0.7s ease forwards;
+}
+
+/* ── Pulse ring for live badge ── */
+@keyframes pulseRing {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulseRing 1.8s ease-out infinite;
 }

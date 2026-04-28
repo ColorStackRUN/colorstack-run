@@ -1,0 +1,100 @@
+{
+  "links": {
+    "instagram": "https://www.instagram.com/colorstack_run",
+    "linkedin": "https://www.linkedin.com/company/colorstack-rutgers/posts/?feedView=all",
+    "join": "https://raiderlink.newark.rutgers.edu/CSDC/club_signup",
+    "email": "csdevelopers.run@gmail.com"
+  },
+  "stats": [
+    {
+      "id": "stat-members",
+      "label": "Community",
+      "value": "Growing"
+    },
+    {
+      "id": "stat-events",
+      "label": "Events",
+      "value": "Career-Focused"
+    },
+    {
+      "id": "stat-partners",
+      "label": "Connections",
+      "value": "Industry"
+    },
+    {
+      "id": "stat-founded",
+      "label": "2024",
+      "value": "Founded"
+    }
+  ],
+  "impact": [
+    {
+      "id": "impact-career",
+      "title": "Career Readiness",
+      "description": "Interview prep, resume reviews, and mentor support designed for competitive internships and full-time roles."
+    },
+    {
+      "id": "impact-access",
+      "title": "Industry Access",
+      "description": "Networking mixers and employer-facing events that connect Rutgers-Newark students to real opportunities."
+    },
+    {
+      "id": "impact-community",
+      "title": "Community",
+      "description": "A strong support system where members collaborate, build projects, and grow as leaders together."
+    }
+  ],
+  "events": [
+    {
+      "id": "event-tech-interview",
+      "date": "2026-04-29",
+      "startTime": "14:30",
+      "endTime": "15:50",
+      "title": "Tech Titans Internship Information Session",
+      "location": "Virtual",
+      "type": "Info Session",
+      "raiderlinkUrl": "https://raiderlink.newark.rutgers.edu/csdc/rsvp_boot?id=377830",
+      "flyerImage": "/uploads/events/4ed7a143-15b8-45b0-9360-4e84eaba886b.png"
+    }
+  ],
+  "team": [
+    {
+      "id": "eren-kahyaoglu",
+      "name": "Eren Kahyaoglu",
+      "role": "Co-President",
+      "bio": "Co-leading chapter strategy, partnerships, and member development initiatives.",
+      "linkedin": "https://www.linkedin.com/in/eren-kahyaoglu/"
+    },
+    {
+      "id": "arian-pedram",
+      "name": "Arian Pedram",
+      "role": "Co-President",
+      "bio": "Focused on chapter operations, growth, and high-impact campus programming.",
+      "linkedin": "https://www.linkedin.com/in/arian-pedram/"
+    },
+    {
+      "id": "jorge-ceballos",
+      "name": "Jorge Ceballos",
+      "role": "Vice President",
+      "bio": "Leads chapter execution across events, partnerships, and member experience.",
+      "linkedin": "https://www.linkedin.com/in/ceballosjorge/",
+      "image": "/uploads/team/dcfd6d35-0971-49a0-804c-fc444b84d969.jpeg"
+    },
+    {
+      "id": "eric-huang",
+      "name": "Eric Huang",
+      "role": "Secretary",
+      "bio": "Coordinates communications and keeps chapter operations organized and on track.",
+      "linkedin": "https://www.linkedin.com/in/eczh/"
+    },
+    {
+      "id": "obianuju-enekebe",
+      "name": "Obianuju Enekebe",
+      "role": "Treasurer",
+      "bio": "Manages chapter finances and ensures resources are aligned with member impact.",
+      "linkedin": "https://www.linkedin.com/in/obianuju-enekebe/"
+    }
+  ],
+  "gallery": [],
+  "alumni": []
+}
