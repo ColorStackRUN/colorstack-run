@@ -16,14 +16,14 @@ type AdminGalleryGroup = {
 };
 
 const buttonClass =
-  "px-4 py-2 rounded-xl border border-gray-700 bg-gray-900 text-white hover:bg-black transition-all shadow-sm hover:shadow active:scale-[0.99]";
+  "px-4 py-2 rounded-xl border border-black/80 bg-black text-white hover:bg-neutral-900 transition-all shadow-sm hover:shadow-md active:scale-[0.99]";
 const primaryButtonClass =
   "px-4 py-2 rounded-xl bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700 transition-all shadow-lg shadow-red-700/20 disabled:opacity-70 active:scale-[0.99]";
 const destructiveLinkClass =
   "text-sm font-medium text-red-600 hover:text-red-700 hover:underline underline-offset-2";
 
 const sectionClass =
-  "rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_10px_35px_rgba(15,23,42,0.06)] space-y-5";
+  "rounded-3xl border border-white/80 bg-gradient-to-b from-white to-[#fff7f5] backdrop-blur p-6 md:p-7 shadow-[0_14px_36px_rgba(15,23,42,0.08)] space-y-5";
 const EVENT_TYPE_OPTIONS = ["Workshop", "Social", "Panel", "Info Session"];
 const EVENT_STATUS_OPTIONS = ["auto", "upcoming", "past"] as const;
 const GRADUATION_YEAR_OPTIONS = Array.from({ length: 9 }, (_, i) => String(2024 + i));
@@ -158,11 +158,16 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [hasGallery, hasAlumni]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-6 py-8 md:px-10">
+    <main className="relative min-h-screen bg-gradient-to-b from-[#fff7f2] via-[#fffdfb] to-[#f7faff] px-6 py-8 md:px-10">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-red-300/30 blur-3xl" />
+        <div className="absolute top-28 right-[-90px] h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="absolute bottom-8 left-1/3 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
+      </div>
       <div className="max-w-6xl mx-auto grid lg:grid-cols-[220px_minmax(0,1fr)] gap-6">
         <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="rounded-2xl border border-gray-200/80 bg-white/90 backdrop-blur p-3 shadow-sm">
-            <p className="px-3 py-2 text-xs uppercase tracking-[0.14em] font-semibold text-gray-500">Sections</p>
+          <nav className="rounded-2xl border border-white/80 bg-gradient-to-b from-white to-red-50/30 backdrop-blur p-3 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+            <p className="px-3 py-2 text-xs uppercase tracking-[0.14em] font-semibold text-slate-500">Sections</p>
             <AdminNavItem href="#admin-links" label="Chapter Links" active={activeSection === "links"} />
             <AdminNavItem href="#admin-events" label="Events" active={activeSection === "events"} />
             <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
@@ -173,14 +178,14 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
         </aside>
 
         <div className="space-y-8">
-        <header className="rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_20px_45px_rgba(185,28,28,0.09)]">
+        <header className="rounded-3xl border border-white/80 bg-gradient-to-r from-white via-white to-red-100/45 backdrop-blur p-6 md:p-7 shadow-[0_20px_50px_rgba(185,28,28,0.12)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="inline-flex text-xs uppercase tracking-[0.14em] font-semibold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded-full mb-3">
                 Content Management
               </p>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">ColorStackRUN Admin</h1>
-              <p className="text-gray-600 mt-1">Update events, team profiles, and gallery content from one place.</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">ColorStackRUN Admin</h1>
+              <p className="text-slate-600 mt-1">Update events, team profiles, and gallery content from one place.</p>
               {lastSavedAt && (
                 <p className="mt-2 text-sm text-emerald-700 font-medium">
                   Last saved at {lastSavedAt}
@@ -403,7 +408,9 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                 <ImageUploadField
                   label="Portrait Image"
                   currentUrl={member.image}
-                  cropShape="round"
+                  cropShape="rect"
+                  cropAspect={3 / 4}
+                  allowReCrop
                   onUpload={async (file) => {
                     const url = await uploadImage(file, "team");
                     updateMember(content, member.id, { image: url }, update);
@@ -488,6 +495,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                       role: "Software Engineer",
                       company: "Company",
                       graduationYear: new Date().getFullYear().toString(),
+                      story: "",
                       linkedin: "https://www.linkedin.com/",
                     },
                   ],
@@ -517,10 +525,18 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                     <LabeledInput label="Graduation Year" value={member.graduationYear} onChange={(value) => updateAlumni(content, member.id, { graduationYear: value }, update)} />
                     <LabeledInput label="LinkedIn URL" value={member.linkedin ?? ""} onChange={(value) => updateAlumni(content, member.id, { linkedin: value }, update)} />
                   </div>
+                  <LabeledTextArea
+                    label="Story (shown in alumni story popup)"
+                    value={member.story ?? ""}
+                    onChange={(value) => updateAlumni(content, member.id, { story: value }, update)}
+                  />
                   <ImageUploadField
                     label="Headshot / Photo"
                     currentUrl={member.image}
                     cropShape="rect"
+                    cropAspect={4 / 3}
+                    allowReCrop
+                    previewBadgeText={`Class of ${member.graduationYear || "20XX"}`}
                     onUpload={async (file) => {
                       const url = await uploadImage(file, "alumni");
                       updateAlumni(content, member.id, { image: url }, update);
@@ -589,6 +605,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                     label="Headshot (optional)"
                     currentUrl={item.image}
                     cropShape="round"
+                    allowReCrop
                     onUpload={async (file) => {
                       const url = await uploadImage(file, "team");
                       updateTestimonial(content, item.id, { image: url }, update);
@@ -613,8 +630,10 @@ function AdminNavItem({ href, label, active }: { href: string; label: string; ac
   return (
     <a
       href={href}
-      className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-        active ? "bg-red-50 text-red-700 border border-red-100" : "text-gray-700 hover:bg-gray-50"
+      className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+        active
+          ? "bg-gradient-to-r from-red-50 to-red-100/60 text-red-700 border border-red-200 shadow-sm"
+          : "text-slate-700 hover:bg-slate-50 border border-transparent"
       }`}
     >
       {label}
@@ -649,10 +668,10 @@ function LabeledInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <input
-        className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+        className="w-full rounded-xl border border-slate-300/80 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -671,7 +690,7 @@ function LabeledEmailInput({
 }) {
   const isValid = !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <input
         type="email"
@@ -699,7 +718,7 @@ function LabeledDateInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <input
         type="date"
@@ -741,7 +760,7 @@ function LabeledTimeInput({
   };
 
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <input
         list={datalistId}
@@ -774,7 +793,7 @@ function LabeledDropdown({
   formatOptionLabel?: (value: string) => string;
 }) {
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <div className="relative">
         <select
@@ -804,7 +823,7 @@ function LabeledTextArea({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="text-sm text-gray-700 space-y-1.5 block">
+    <label className="text-sm text-slate-700 space-y-1.5 block">
       <span className="font-medium">{label}</span>
       <textarea
         className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 min-h-24 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
@@ -819,19 +838,58 @@ function ImageUploadField({
   label,
   currentUrl,
   cropShape = "rect",
+  cropAspect,
+  allowReCrop = false,
+  previewBadgeText,
   onUpload,
 }: {
   label: string;
   currentUrl?: string;
   cropShape?: "rect" | "round";
+  cropAspect?: number;
+  allowReCrop?: boolean;
+  previewBadgeText?: string;
   onUpload: (file: File) => Promise<void>;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [loadingExistingImage, setLoadingExistingImage] = useState(false);
   const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
   const [sourceFileName, setSourceFileName] = useState("image");
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [cardPreviewUrl, setCardPreviewUrl] = useState<string | null>(null);
+  const showEboardCardPreview = cropShape === "rect" && cropAspect === 3 / 4;
+  const showAlumniCardPreview = cropShape === "rect" && cropAspect === 4 / 3;
+  const showCardPreview = showEboardCardPreview || showAlumniCardPreview;
+
+  useEffect(() => {
+    if (!showCardPreview || !sourceImageUrl || !croppedAreaPixels) {
+      setCardPreviewUrl((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return null;
+      });
+      return;
+    }
+
+    let isCancelled = false;
+    void getCroppedPreviewUrl(sourceImageUrl, croppedAreaPixels).then((nextUrl) => {
+      if (isCancelled) {
+        URL.revokeObjectURL(nextUrl);
+        return;
+      }
+      setCardPreviewUrl((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return nextUrl;
+      });
+    }).catch(() => {
+      if (!isCancelled) setCardPreviewUrl(null);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [showCardPreview, sourceImageUrl, croppedAreaPixels]);
 
   const openCropper = (file: File) => {
     const objectUrl = URL.createObjectURL(file);
@@ -846,7 +904,31 @@ function ImageUploadField({
     if (sourceImageUrl) {
       URL.revokeObjectURL(sourceImageUrl);
     }
+    setCardPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return null;
+    });
     setSourceImageUrl(null);
+  };
+
+  const editExistingImage = async () => {
+    if (!currentUrl) return;
+    setLoadingExistingImage(true);
+    try {
+      const response = await fetch(currentUrl);
+      if (!response.ok) {
+        throw new Error("Failed to load current image for editing.");
+      }
+      const blob = await response.blob();
+      const fileNameFromUrl = currentUrl.split("/").pop()?.split("?")[0] || "existing-image.jpg";
+      const mimeType = blob.type || "image/jpeg";
+      const existingFile = new File([blob], fileNameFromUrl, { type: mimeType });
+      openCropper(existingFile);
+    } catch {
+      window.alert("Could not open existing image for editing. Please upload the image again.");
+    } finally {
+      setLoadingExistingImage(false);
+    }
   };
 
   return (
@@ -854,31 +936,55 @@ function ImageUploadField({
       <p className="text-sm font-medium text-gray-700">{label}</p>
       {currentUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={currentUrl} alt={label} className="w-28 h-28 rounded-xl object-cover border border-gray-200 shadow-sm" />
-      )}
-      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300/90 bg-white shadow-sm hover:bg-gray-50 cursor-pointer transition-colors w-fit text-sm font-medium text-gray-700">
-        <span>{uploading ? "Uploading..." : "Upload Image"}</span>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            if (cropShape === "round") {
-              openCropper(file);
-              e.target.value = "";
-              return;
-            }
-            setUploading(true);
-            try {
-              await onUpload(file);
-            } finally {
-              setUploading(false);
-            }
-          }}
+        <img
+          src={currentUrl}
+          alt={label}
+          className={`object-cover border border-gray-200 shadow-sm ${
+            cropShape === "round"
+              ? "w-28 h-28 rounded-full"
+              : cropAspect === 3 / 4
+                ? "w-28 aspect-[3/4] rounded-2xl"
+                : cropAspect === 4 / 3
+                  ? "w-36 aspect-[4/3] rounded-2xl"
+                : "w-28 h-28 rounded-xl"
+          }`}
         />
-      </label>
+      )}
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300/90 bg-white shadow-sm hover:bg-gray-50 cursor-pointer transition-colors w-fit text-sm font-medium text-gray-700">
+          <span>{uploading ? "Uploading..." : "Upload Image"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (cropShape === "round" || typeof cropAspect === "number") {
+                openCropper(file);
+                e.target.value = "";
+                return;
+              }
+              setUploading(true);
+              try {
+                await onUpload(file);
+              } finally {
+                setUploading(false);
+              }
+            }}
+          />
+        </label>
+        {allowReCrop && currentUrl && (
+          <button
+            type="button"
+            onClick={editExistingImage}
+            disabled={loadingExistingImage || uploading}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300/90 bg-white shadow-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors w-fit text-sm font-medium text-gray-700"
+          >
+            {loadingExistingImage ? "Opening editor..." : "Edit image"}
+          </button>
+        )}
+      </div>
       {sourceImageUrl && (
         <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4">
           <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 space-y-4">
@@ -893,18 +999,59 @@ function ImageUploadField({
               </button>
             </div>
 
-            <div className="relative h-[340px] w-full rounded-xl overflow-hidden bg-gray-100">
-              <Cropper
-                image={sourceImageUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                cropShape={cropShape}
-                showGrid={false}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
-              />
+            <div className={`grid gap-4 ${showCardPreview ? "md:grid-cols-[minmax(0,1fr)_240px]" : ""}`}>
+              <div className="relative h-[340px] w-full rounded-xl overflow-hidden bg-gray-100">
+                <Cropper
+                  image={sourceImageUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={cropAspect ?? 1}
+                  cropShape={cropShape}
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropAreaChange={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
+                  onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
+                />
+              </div>
+              {showCardPreview && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Card Preview</p>
+                  {showEboardCardPreview ? (
+                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-gray-200 bg-black">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={cardPreviewUrl ?? sourceImageUrl} alt="Card preview" className="h-full w-full object-cover" />
+                      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/75 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+                      <div className="absolute left-2 top-2 right-20">
+                        <div className="h-2 w-2/5 rounded bg-red-400/90" />
+                        <div className="mt-1.5 h-3 w-full rounded bg-white/85" />
+                      </div>
+                      <div className="absolute right-2 top-2 w-14 h-6 rounded-full border border-white/40 bg-black/45 flex items-center justify-center">
+                        <div className="h-2 w-10 rounded bg-white/80" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full rounded-2xl border border-red-200/80 bg-white overflow-hidden">
+                      <div className="relative aspect-[4/3] w-full bg-black">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={cardPreviewUrl ?? sourceImageUrl} alt="Alumni card preview" className="h-full w-full object-cover" />
+                        <div className="absolute right-2 top-2 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm">
+                          {previewBadgeText ?? "Class of 20XX"}
+                        </div>
+                      </div>
+                      <div className="px-3 py-3 space-y-2.5">
+                        <div className="h-3 w-3/4 rounded bg-slate-800/85" />
+                        <div className="h-2.5 w-2/3 rounded bg-slate-500/70" />
+                        <div className="h-2.5 w-1/2 rounded bg-slate-500/60" />
+                      </div>
+                    </div>
+                  )}
+                  <p className="mt-2 text-[11px] leading-relaxed text-gray-500">
+                    Preview simulates the public card framing and text overlay zone.
+                  </p>
+                </div>
+              )}
             </div>
 
             <label className="block text-sm text-gray-700">
@@ -1178,6 +1325,36 @@ async function getCroppedFile(
   const extension = mimeType.split("/")[1] ?? "jpg";
   const baseName = fileName.replace(/\.[^/.]+$/, "");
   return new File([blob], `${baseName}-cropped.${extension}`, { type: mimeType });
+}
+
+async function getCroppedPreviewUrl(imageSrc: string, cropPixels: Area) {
+  const image = await loadImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  canvas.width = cropPixels.width;
+  canvas.height = cropPixels.height;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Could not create canvas context.");
+  }
+
+  ctx.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    cropPixels.width,
+    cropPixels.height
+  );
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", 0.92);
+  });
+  if (!blob) throw new Error("Failed to create cropped preview image.");
+  return URL.createObjectURL(blob);
 }
 
 function loadImage(src: string) {

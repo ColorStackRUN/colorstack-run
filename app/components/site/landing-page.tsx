@@ -14,6 +14,10 @@ type ActiveFlyerState = {
   galleryItems?: ModalImageItem[];
   galleryIndex?: number;
 };
+type ActiveAlumniStoryState = {
+  member: SiteContent["alumni"][number];
+  accent: string;
+};
 
 const PARTNERS = [
   { name: "CoreWeave", src: "/uploads/Companies/coreweave%20logo.webp" },
@@ -85,6 +89,7 @@ export function LandingPage({ content }: LandingPageProps) {
   const [activeSection, setActiveSection] = useState("about");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFlyer, setActiveFlyer] = useState<ActiveFlyerState | null>(null);
+  const [activeAlumniStory, setActiveAlumniStory] = useState<ActiveAlumniStoryState | null>(null);
   const [isDark, setIsDark]     = useState(false);
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
@@ -149,11 +154,12 @@ export function LandingPage({ content }: LandingPageProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!activeFlyer) return;
       if (e.key === "Escape") {
-        setActiveFlyer(null);
-        return;
+        if (activeFlyer) setActiveFlyer(null);
+        if (activeAlumniStory) setActiveAlumniStory(null);
+        if (activeFlyer || activeAlumniStory) return;
       }
+      if (!activeFlyer) return;
       if (!activeFlyer.galleryItems || activeFlyer.galleryItems.length <= 1) return;
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         const delta = e.key === "ArrowRight" ? 1 : -1;
@@ -165,7 +171,7 @@ export function LandingPage({ content }: LandingPageProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeFlyer]);
+  }, [activeFlyer, activeAlumniStory]);
 
   const scrolled = scrollY > 60;
 
@@ -932,16 +938,29 @@ export function LandingPage({ content }: LandingPageProps) {
                           <BuildingIcon />
                           <span>{member.company}</span>
                         </div>
-                        {member.linkedin && (
-                          <a
-                            href={member.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold transition-opacity hover:opacity-75"
-                            style={{ color: accent }}
-                          >
-                            Connect on LinkedIn →
-                          </a>
+                        {(member.linkedin || member.story?.trim()) && (
+                          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                            {member.linkedin && (
+                              <a
+                                href={member.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-75"
+                                style={{ color: accent }}
+                              >
+                                Connect on LinkedIn →
+                              </a>
+                            )}
+                            {member.story?.trim() && (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-500 hover:text-red-400 transition-colors"
+                                onClick={() => setActiveAlumniStory({ member, accent })}
+                              >
+                                {getAlumniStoryCta(member.name)} →
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1066,6 +1085,101 @@ export function LandingPage({ content }: LandingPageProps) {
           >
             ↑ Top
           </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeAlumniStory && (
+          <motion.div
+            className="fixed inset-0 z-[72] bg-black/70 backdrop-blur-sm"
+            onClick={() => setActiveAlumniStory(null)}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+          >
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center p-4 md:p-8"
+              onClick={(e) => e.stopPropagation()}
+              initial={reduceMotion ? false : { y: 20, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 14, opacity: 0, scale: 0.98 }}
+              transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_28px_90px_rgba(0,0,0,0.75)]">
+                <div className="grid md:grid-cols-[1.1fr_minmax(0,1fr)] h-full">
+                  <div className="relative min-h-[260px] md:min-h-[620px]">
+                    {activeAlumniStory.member.image ? (
+                      <Image
+                        src={activeAlumniStory.member.image}
+                        alt={activeAlumniStory.member.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 100vw, 45vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0" style={{ background: `${activeAlumniStory.accent}22` }} />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+                    <div className="absolute left-5 right-5 bottom-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: activeAlumniStory.accent }}>
+                        Alumni Spotlight
+                      </p>
+                      <h3 className="mt-2 text-3xl font-black text-white tracking-tight">
+                        {activeAlumniStory.member.name}
+                      </h3>
+                      <p className="mt-1 text-white/85 text-sm">
+                        {activeAlumniStory.member.role} · {activeAlumniStory.member.company}
+                      </p>
+                    </div>
+                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white border border-white/20 bg-black/35">
+                      Class of {activeAlumniStory.member.graduationYear}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAlumniStory(null)}
+                      className="absolute right-4 top-4 z-10 h-9 w-9 rounded-full bg-black/45 hover:bg-black/70 text-white text-lg flex items-center justify-center transition-colors"
+                      aria-label="Close alumni story"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="relative overflow-y-auto bg-gradient-to-b from-black via-[#050505] to-[#0a0a0a] p-6 md:p-7">
+                    <div className="absolute -top-16 -right-10 h-44 w-44 rounded-full blur-3xl" style={{ background: `${activeAlumniStory.accent}30` }} />
+                    <div className="relative">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-red-300">
+                        Story
+                      </div>
+                      <p className="mt-5 text-[15px] leading-7 text-white/86 whitespace-pre-line">
+                        {activeAlumniStory.member.story?.trim() || "Story coming soon."}
+                      </p>
+                      <div className="mt-7 pt-5 border-t border-white/10 flex flex-wrap items-center gap-3">
+                        {activeAlumniStory.member.linkedin && (
+                          <a
+                            href={activeAlumniStory.member.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0a66c2] hover:bg-[#0958a5] text-white text-sm font-semibold transition-colors"
+                          >
+                            <LinkedInIcon />
+                            Connect on LinkedIn
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActiveAlumniStory(null)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-white/85 hover:text-white hover:bg-white/10 text-sm font-semibold transition-colors"
+                        >
+                          Back to alumni
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -1454,4 +1568,10 @@ function toCalendarDateTime(date: string, time: string) {
   const [h, m] = time.split(":");
   if (!y || !mo || !d || !h || !m) return "";
   return `${y}${mo}${d}T${h}${m}00`;
+}
+
+function getAlumniStoryCta(fullName: string) {
+  const firstName = fullName.trim().split(/\s+/)[0] || "Alumni";
+  const possessive = /s$/i.test(firstName) ? `${firstName}'` : `${firstName}'s`;
+  return `Read ${possessive} Story`;
 }

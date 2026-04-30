@@ -65,6 +65,7 @@ export type AlumniMember = {
   role: string;
   company: string;
   graduationYear: string;
+  story?: string;
   image?: string;
   linkedin?: string;
 };
