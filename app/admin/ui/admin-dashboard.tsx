@@ -226,6 +226,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                       id: crypto.randomUUID(),
                       title: "New Event",
                       date: new Date().toISOString().slice(0, 10),
+                      endDate: undefined,
                       startTime: "18:00",
                       endTime: "19:00",
                       location: "TBD",
@@ -253,7 +254,31 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
                   <LabeledInput label="Title" value={event.title} onChange={(value) => updateEvent(content, event.id, { title: value }, update)} />
-                  <LabeledDateInput label="Date" value={event.date} onChange={(value) => updateEvent(content, event.id, { date: value }, update)} />
+                  <LabeledDateInput
+                    label={isMultiDayEvent(event) ? "Start Date" : "Date"}
+                    value={event.date}
+                    onChange={(value) => updateEvent(content, event.id, { date: value }, update)}
+                  />
+                  {isMultiDayEvent(event) ? (
+                    <LabeledDateInput
+                      label="End Date"
+                      value={event.endDate ?? event.date}
+                      onChange={(value) => updateEvent(content, event.id, { endDate: value || event.date }, update)}
+                    />
+                  ) : (
+                    <div />
+                  )}
+                  <label className="md:col-span-2 inline-flex items-center gap-2.5 text-sm text-gray-700 rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      checked={isMultiDayEvent(event)}
+                      onChange={(e) =>
+                        updateEvent(content, event.id, { endDate: e.target.checked ? event.endDate ?? event.date : undefined }, update)
+                      }
+                    />
+                    <span className="font-medium">This is a multiple-day event</span>
+                  </label>
                   <LabeledTimeInput
                     label="Start Time (ET)"
                     value={event.startTime}
@@ -1038,6 +1063,10 @@ function updateEvent(content: SiteContent, id: string, patch: Partial<SiteConten
     ...content,
     events: content.events.map((event) => (event.id === id ? { ...event, ...patch } : event)),
   });
+}
+
+function isMultiDayEvent(event: SiteContent["events"][number]) {
+  return Boolean(event.endDate);
 }
 
 function updateMember(content: SiteContent, id: string, patch: Partial<SiteContent["team"][number]>, update: (content: SiteContent) => void) {

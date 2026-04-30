@@ -1219,6 +1219,7 @@ function EventsCards({
                     </div>
 
                     <h3 className={`text-xl font-bold mb-2 group-hover:text-red-500 transition-colors ${textColorClasses.text}`}>{event.title}</h3>
+                    <p className={`text-sm ${textColorClasses.textFaint} mb-1`}>{formatEventDateRange(event)}</p>
                     <p className={`text-sm ${textColorClasses.textFaint} mb-1`}>{formatTimeRange(event.startTime, event.endTime)}</p>
                     <p className={`text-sm ${textColorClasses.textFaint}`}>{event.location}</p>
 
@@ -1359,7 +1360,7 @@ function resolveEventStatus(event: SiteContent["events"][number]) {
   return eventEnd.getTime() < Date.now() ? "past" : "upcoming";
 }
 function getEventEndDate(event: SiteContent["events"][number]) {
-  const parsed = parseDateInput(event.date);
+  const parsed = parseDateInput(event.endDate ?? event.date);
   if (!parsed) return null;
   const [hourText, minuteText] = event.endTime.split(":");
   const hour = Number(hourText);
@@ -1384,6 +1385,16 @@ function getEventSortTime(event: SiteContent["events"][number]) {
   const resolvedMinute = Number.isNaN(minute) ? 0 : minute;
   return new Date(parsed.year, parsed.month - 1, parsed.day, resolvedHour, resolvedMinute, 0, 0).getTime();
 }
+function formatEventDateRange(event: SiteContent["events"][number]) {
+  const start = parseDateInput(event.date);
+  const end = parseDateInput(event.endDate ?? event.date);
+  if (!start || !end) return event.date;
+  const startDate = new Date(start.year, start.month - 1, start.day);
+  const endDate = new Date(end.year, end.month - 1, end.day);
+  const startLabel = startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const endLabel = endDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return startLabel === endLabel ? startLabel : `${startLabel} - ${endLabel}`;
+}
 function buildGallerySections(gallery: SiteContent["gallery"], events: SiteContent["events"]) {
   const eventById = new Map(events.map((event) => [event.id, event]));
   const grouped = new Map<string, SiteContent["gallery"]>();
@@ -1404,7 +1415,7 @@ function buildGallerySections(gallery: SiteContent["gallery"], events: SiteConte
     .map((event) => ({
       id: `event-gallery-${event.id}`,
       title: event.title,
-      subtitle: `${formatMonthFromDate(event.date)} · ${event.location}`,
+      subtitle: `${formatEventDateRange(event)} · ${event.location}`,
       images: grouped.get(event.id) ?? [],
     }));
 
@@ -1431,9 +1442,10 @@ function chunkEvents<T>(items: T[], size: number) {
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
   return chunks;
 }
-function buildGoogleCalendarUrl(event: { title: string; date: string; startTime: string; endTime: string; location: string }) {
+function buildGoogleCalendarUrl(event: { title: string; date: string; endDate?: string; startTime: string; endTime: string; location: string }) {
   const start = toCalendarDateTime(event.date, event.startTime);
-  const end   = toCalendarDateTime(event.date, event.endTime);
+  const endDate = event.endDate && parseDateInput(event.endDate) ? event.endDate : event.date;
+  const end   = toCalendarDateTime(endDate, event.endTime);
   const params = new URLSearchParams({ action: "TEMPLATE", text: event.title, dates: `${start}/${end}`, details: "Hosted by ColorStack Rutgers–Newark", location: event.location });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
