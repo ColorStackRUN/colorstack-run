@@ -41,6 +41,8 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   const [dirty, setDirty] = useState(false);
   const [customTypeOpen, setCustomTypeOpen] = useState<Record<string, boolean>>({});
   const [extraGalleryGroups, setExtraGalleryGroups] = useState<string[]>([]);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [saveHistory, setSaveHistory] = useState<string[]>([]);
 
   const hasGallery = useMemo(() => content.gallery.length > 0, [content.gallery.length]);
   const hasAlumni = useMemo(() => content.alumni.length > 0, [content.alumni.length]);
@@ -94,6 +96,9 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
       return;
     }
     setDirty(false);
+    const savedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    setLastSavedAt(savedAt);
+    setSaveHistory((prev) => [savedAt, ...prev].slice(0, 4));
     showToast("success", "Changes saved and published.");
   };
 
@@ -176,6 +181,16 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
               </p>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">ColorStackRUN Admin</h1>
               <p className="text-gray-600 mt-1">Update events, team profiles, and gallery content from one place.</p>
+              {lastSavedAt && (
+                <p className="mt-2 text-sm text-emerald-700 font-medium">
+                  Last saved at {lastSavedAt}
+                </p>
+              )}
+              {saveHistory.length > 1 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Recent saves: {saveHistory.join(" · ")}
+                </p>
+              )}
             </div>
             <div className="flex gap-3">
               <button className={buttonClass} onClick={onLogout}>Log out</button>

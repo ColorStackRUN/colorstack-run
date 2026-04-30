@@ -1,12 +1,19 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { type ComponentProps, type MouseEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
 import { MotionSection, Reveal, AnimatedCounter } from "./motion";
 
 type LandingPageProps = { content: SiteContent };
+type ModalImageItem = { src: string; title: string };
+type ActiveFlyerState = {
+  src: string;
+  title: string;
+  galleryItems?: ModalImageItem[];
+  galleryIndex?: number;
+};
 
 const PARTNERS = [
   { name: "CoreWeave", src: "/uploads/Companies/coreweave%20logo.webp" },
@@ -60,12 +67,27 @@ const T = {
   modalInner: "bg-gray-50         dark:bg-[#0a0a0a]",
 };
 
+function handleCursorGlowMove(event: MouseEvent<HTMLElement>) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const tiltY = ((x / rect.width) - 0.5) * 5;
+  const tiltX = -((y / rect.height) - 0.5) * 5;
+  event.currentTarget.style.setProperty("--glow-x", `${x}px`);
+  event.currentTarget.style.setProperty("--glow-y", `${y}px`);
+  event.currentTarget.style.setProperty("--tilt-x", `${tiltX.toFixed(2)}deg`);
+  event.currentTarget.style.setProperty("--tilt-y", `${tiltY.toFixed(2)}deg`);
+}
+
 export function LandingPage({ content }: LandingPageProps) {
   const [scrollY, setScrollY]   = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [activeSection, setActiveSection] = useState("about");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeFlyer, setActiveFlyer] = useState<{ src: string; title: string } | null>(null);
+  const [activeFlyer, setActiveFlyer] = useState<ActiveFlyerState | null>(null);
   const [isDark, setIsDark]     = useState(false);
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
 
   const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
@@ -74,6 +96,16 @@ export function LandingPage({ content }: LandingPageProps) {
   const [eventsView, setEventsView] = useState<"upcoming" | "past">("upcoming");
   const [activeGalleryTab, setActiveGalleryTab] = useState(0);
   const activeEvents = eventsView === "upcoming" ? upcomingEvents : pastEvents;
+  const navLinks = useMemo(
+    () => ([
+      { href: "#about", label: "About" },
+      { href: "#events", label: "Events" },
+      ...(gallery.length > 0 ? [{ href: "#gallery", label: "Gallery" }] : []),
+      { href: "#team", label: "Team" },
+      ...(alumni.length > 0 ? [{ href: "#alumni", label: "Alumni" }] : []),
+    ]),
+    [gallery.length, alumni.length]
+  );
 
   // Initialise from localStorage / system pref after mount (avoids hydration mismatch)
   useEffect(() => {
@@ -92,16 +124,48 @@ export function LandingPage({ content }: LandingPageProps) {
   };
 
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrollY(y);
+      setShowBackToTop(y > 420);
+
+      const sectionIds = navLinks.map((item) => item.href.slice(1));
+      const marker = y + window.innerHeight * 0.35;
+      let current = sectionIds[0] ?? "about";
+      for (const id of sectionIds) {
+        const section = document.getElementById(id);
+        if (!section) continue;
+        if (marker >= section.offsetTop - 80) current = id;
+      }
+      if (window.innerHeight + y >= document.body.scrollHeight - 20) {
+        current = sectionIds[sectionIds.length - 1] ?? current;
+      }
+      setActiveSection(current);
+    };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [navLinks]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActiveFlyer(null); };
+    const onKey = (e: KeyboardEvent) => {
+      if (!activeFlyer) return;
+      if (e.key === "Escape") {
+        setActiveFlyer(null);
+        return;
+      }
+      if (!activeFlyer.galleryItems || activeFlyer.galleryItems.length <= 1) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const delta = e.key === "ArrowRight" ? 1 : -1;
+        const currentIndex = activeFlyer.galleryIndex ?? 0;
+        const nextIndex = (currentIndex + delta + activeFlyer.galleryItems.length) % activeFlyer.galleryItems.length;
+        const nextItem = activeFlyer.galleryItems[nextIndex];
+        setActiveFlyer({ ...activeFlyer, src: nextItem.src, title: nextItem.title, galleryIndex: nextIndex });
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [activeFlyer]);
 
   const scrolled = scrollY > 60;
 
@@ -133,25 +197,19 @@ export function LandingPage({ content }: LandingPageProps) {
             </a>
 
             <div className="hidden md:flex items-center gap-1">
-              {([ ["#about","About"], ["#events","Events"], ["#team","Team"] ] as const).map(([href, label]) => (
+              {navLinks.map(({ href, label }) => (
                 <a
                   key={href}
                   href={href}
-                  className={`px-4 py-2 text-sm ${T.textMuted} hover:${T.text} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}
+                  className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === href.slice(1)
+                      ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
+                      : `${T.textMuted} hover:${T.text} hover:bg-black/[0.04] dark:hover:bg-white/[0.05]`
+                  }`}
                 >
                   {label}
                 </a>
               ))}
-              {gallery.length > 0 && (
-                <a href="#gallery" className={`px-4 py-2 text-sm ${T.textMuted} hover:${T.text} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}>
-                  Gallery
-                </a>
-              )}
-              {alumni.length > 0 && (
-                <a href="#alumni" className={`px-4 py-2 text-sm ${T.textMuted} hover:${T.text} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}>
-                  Alumni
-                </a>
-              )}
 
               {/* Theme toggle */}
               <button
@@ -166,7 +224,8 @@ export function LandingPage({ content }: LandingPageProps) {
                 href={links.join}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-3 px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-all hover:shadow-lg hover:shadow-red-600/25 hover:shadow-[0_0_30px_rgba(239,68,68,0.28)] hover:scale-[1.02]"
+                className="cursor-glow ml-3 px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-all hover:shadow-lg hover:shadow-red-600/25 hover:shadow-[0_0_30px_rgba(239,68,68,0.28)] hover:scale-[1.02]"
+                onMouseMove={handleCursorGlowMove}
               >
                 Join Us
               </a>
@@ -198,26 +257,20 @@ export function LandingPage({ content }: LandingPageProps) {
         {mobileMenuOpen && (
           <div className={`md:hidden border-t ${T.border} ${T.mobileMenu}`}>
             <div className="px-6 py-5 space-y-1">
-              {([ ["#about","About"], ["#events","Events"], ["#team","Team"] ] as const).map(([href, label]) => (
+              {navLinks.map(({ href, label }) => (
                 <a
                   key={href}
                   href={href}
-                  className={`block px-3 py-2.5 text-sm ${T.textMuted} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}
+                  className={`block px-3 py-2.5 text-sm rounded-lg transition-all ${
+                    activeSection === href.slice(1)
+                      ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
+                      : `${T.textMuted} hover:bg-black/[0.04] dark:hover:bg-white/[0.05]`
+                  }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {label}
                 </a>
               ))}
-              {gallery.length > 0 && (
-                <a href="#gallery" className={`block px-3 py-2.5 text-sm ${T.textMuted} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`} onClick={() => setMobileMenuOpen(false)}>
-                  Gallery
-                </a>
-              )}
-              {alumni.length > 0 && (
-                <a href="#alumni" className={`block px-3 py-2.5 text-sm ${T.textMuted} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`} onClick={() => setMobileMenuOpen(false)}>
-                  Alumni
-                </a>
-              )}
               <div className="pt-3">
                 <a
                   href={links.join}
@@ -300,14 +353,16 @@ export function LandingPage({ content }: LandingPageProps) {
                     href={links.join}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-2 px-7 py-3.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-full transition-all hover:shadow-xl hover:shadow-red-600/30 hover:shadow-[0_0_34px_rgba(239,68,68,0.3)] hover:scale-[1.03]"
+                    className="cursor-glow group inline-flex items-center gap-2 px-7 py-3.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-full transition-all hover:shadow-xl hover:shadow-red-600/30 hover:shadow-[0_0_34px_rgba(239,68,68,0.3)] hover:scale-[1.03]"
+                    onMouseMove={handleCursorGlowMove}
                   >
                     Join the Community
                     <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                   </a>
                   <a
                     href="#events"
-                    className={`inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.14)]`}
+                    className={`cursor-glow inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.14)]`}
+                    onMouseMove={handleCursorGlowMove}
                   >
                     Explore Events <span>↓</span>
                   </a>
@@ -410,7 +465,8 @@ export function LandingPage({ content }: LandingPageProps) {
                 ].map((item) => (
                   <div
                     key={item.title}
-                    className={`group flex gap-4 p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border ${T.border} hover:border-red-500/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all hover:shadow-[0_0_30px_rgba(239,68,68,0.12)] cursor-default`}
+                    className={`cursor-glow cursor-tilt group flex gap-4 p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border ${T.border} hover:border-red-500/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all hover:shadow-[0_0_30px_rgba(239,68,68,0.12)] cursor-default`}
+                    onMouseMove={handleCursorGlowMove}
                   >
                     <div className="shrink-0 w-10 h-10 rounded-xl bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:bg-red-600/12 dark:group-hover:bg-red-600/15 transition-colors">
                       {item.icon}
@@ -441,7 +497,10 @@ export function LandingPage({ content }: LandingPageProps) {
           <div className="grid md:grid-cols-3 gap-4">
             {impact.map((item, i) => (
               <Reveal key={item.id}>
-                <div className={`relative overflow-hidden group p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 dark:hover:border-red-500/25 hover:border-red-200 transition-all card-shimmer shadow-sm dark:shadow-none hover:shadow-[0_0_34px_rgba(239,68,68,0.14)]`}>
+                <div
+                  className={`cursor-glow cursor-tilt relative overflow-hidden group p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 dark:hover:border-red-500/25 hover:border-red-200 transition-all card-shimmer shadow-sm dark:shadow-none hover:shadow-[0_0_34px_rgba(239,68,68,0.14)]`}
+                  onMouseMove={handleCursorGlowMove}
+                >
                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-600 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity rounded-l-2xl" />
                   <div className="w-8 h-8 rounded-lg bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 flex items-center justify-center mb-5">
                     <span className="text-red-500 text-sm font-bold">{String(i + 1).padStart(2, "0")}</span>
@@ -472,7 +531,10 @@ export function LandingPage({ content }: LandingPageProps) {
                 const initials = item.name.split(" ").map((p) => p[0]).join("").slice(0, 2);
                 return (
                   <Reveal key={item.id}>
-                    <div className={`relative flex flex-col p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 transition-all h-full shadow-sm dark:shadow-none hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}>
+                    <div
+                      className={`cursor-glow cursor-tilt relative flex flex-col p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 transition-all h-full shadow-sm dark:shadow-none hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}
+                      onMouseMove={handleCursorGlowMove}
+                    >
                       <span className="text-red-500 text-5xl font-black leading-none select-none mb-2">"</span>
                       <p className={`${T.textMuted} text-sm leading-relaxed flex-1`}>{item.testimonial}</p>
                       <div className={`flex items-center gap-3 mt-6 pt-5 border-t ${T.border}`}>
@@ -575,7 +637,8 @@ export function LandingPage({ content }: LandingPageProps) {
                     key={section.id}
                     type="button"
                     onClick={() => setActiveGalleryTab(i)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    onMouseMove={handleCursorGlowMove}
+                    className={`cursor-glow px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                       activeGalleryTab === i
                         ? "bg-red-600 text-white shadow-sm hover:shadow-[0_0_26px_rgba(239,68,68,0.24)]"
                         : `${T.textMuted} bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.12)]`
@@ -591,27 +654,54 @@ export function LandingPage({ content }: LandingPageProps) {
             {gallerySections[activeGalleryTab] && (
               <motion.div
                 key={gallerySections[activeGalleryTab].id}
-                initial={{ opacity: 0, y: 16 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: reduceMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 {gallerySections[activeGalleryTab].subtitle && (
                   <p className={`text-sm ${T.textMuted} mb-6`}>{gallerySections[activeGalleryTab].subtitle}</p>
                 )}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {gallerySections[activeGalleryTab].images.map((item) => (
-                    <figure key={item.id} className={`rounded-2xl overflow-hidden border ${T.border} ${T.surf} group cursor-default transition-all hover:border-red-400/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}>
-                      <div className="relative aspect-[4/3] overflow-hidden">
-                        <Image
+                    <figure
+                      key={item.id}
+                      className={`cursor-glow cursor-tilt rounded-2xl overflow-hidden border ${T.border} ${T.surf} group transition-all hover:border-red-400/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}
+                      onMouseMove={handleCursorGlowMove}
+                    >
+                      <button
+                        type="button"
+                        className="relative aspect-[4/3] w-full overflow-hidden cursor-zoom-in"
+                        onClick={() => {
+                          const sectionTitle = gallerySections[activeGalleryTab].title;
+                          const items = gallerySections[activeGalleryTab].images.map((image) => ({
+                            src: image.src,
+                            title: image.caption || image.alt || sectionTitle,
+                          }));
+                          const index = items.findIndex((image) => image.src === item.src);
+                          const selectedIndex = index >= 0 ? index : 0;
+                          const selected = items[selectedIndex];
+                          if (!selected) return;
+                          setActiveFlyer({
+                            src: selected.src,
+                            title: selected.title,
+                            galleryItems: items,
+                            galleryIndex: selectedIndex,
+                          });
+                        }}
+                        aria-label={`Open image preview for ${item.caption || item.alt}`}
+                      >
+                        <ImageWithSkeleton
                           src={item.src}
                           alt={item.alt}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-700"
                           sizes="(max-width: 1024px) 50vw, 33vw"
                         />
-                      </div>
+                      </button>
                       {item.caption && (
-                        <figcaption className={`px-4 py-3 text-sm ${T.textFaint}`}>{item.caption}</figcaption>
+                        <figcaption className={`px-4 py-3 text-sm font-semibold tracking-[0.04em] italic ${T.text}`}>
+                          {item.caption}
+                        </figcaption>
                       )}
                     </figure>
                   ))}
@@ -810,7 +900,8 @@ export function LandingPage({ content }: LandingPageProps) {
                 return (
                   <Reveal key={member.id}>
                     <div
-                      className={`group rounded-2xl overflow-hidden ${T.surfAlumni} transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[0_0_34px_rgba(239,68,68,0.12)]`}
+                      className={`cursor-glow group rounded-2xl overflow-hidden ${T.surfAlumni} transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[0_0_34px_rgba(239,68,68,0.12)]`}
+                      onMouseMove={handleCursorGlowMove}
                       style={{ border: `1.5px solid ${accent}40` }}
                     >
                       <div className="relative aspect-[4/3] overflow-hidden">
@@ -883,13 +974,15 @@ export function LandingPage({ content }: LandingPageProps) {
                 href={links.join}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-7 py-3.5 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-lg hover:shadow-red-900/20 hover:shadow-[0_0_32px_rgba(239,68,68,0.28)] hover:scale-[1.02] text-base"
+                className="cursor-glow px-7 py-3.5 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-lg hover:shadow-red-900/20 hover:shadow-[0_0_32px_rgba(239,68,68,0.28)] hover:scale-[1.02] text-base"
+                onMouseMove={handleCursorGlowMove}
               >
                 Join on RaiderLink
               </a>
               <a
                 href={`mailto:${links.email}`}
-                className="px-7 py-3.5 border border-white/25 hover:border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.16)] text-base"
+                className="cursor-glow px-7 py-3.5 border border-white/25 hover:border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.16)] text-base"
+                onMouseMove={handleCursorGlowMove}
               >
                 Contact Us
               </a>
@@ -951,38 +1044,131 @@ export function LandingPage({ content }: LandingPageProps) {
         </div>
       </footer>
 
-      {/* ── Flyer Modal ── */}
-      {activeFlyer && (
-        <div
-          className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
-          onClick={() => setActiveFlyer(null)}
-        >
-          <div
-            className={`relative w-full max-w-3xl ${T.modalBg} border ${T.border} rounded-2xl shadow-2xl p-3`}
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            type="button"
+            aria-label="Back to top"
+            className={`fixed z-[65] cursor-glow px-4 py-2.5 rounded-full border ${T.border2} ${T.surf} ${T.text} text-sm font-semibold shadow-lg`}
+            style={{
+              position: "fixed",
+              right: "max(1rem, env(safe-area-inset-right))",
+              bottom: "max(1rem, env(safe-area-inset-bottom))",
+              left: "auto",
+              top: "auto",
+            }}
+            onMouseMove={handleCursorGlowMove}
+            onClick={() => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" })}
+            initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.95 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
           >
-            <button
-              type="button"
-              aria-label="Close flyer preview"
-              onClick={() => setActiveFlyer(null)}
-              className={`absolute right-3 top-3 z-10 w-8 h-8 rounded-full ${T.iconBg} ${T.iconBgHover} ${T.text} text-lg flex items-center justify-center transition-colors`}
+            ↑ Top
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ── Flyer Modal ── */}
+      <AnimatePresence>
+        {activeFlyer && (
+          <motion.div
+            className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setActiveFlyer(null)}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
+          >
+            <motion.div
+              className={`relative w-full max-w-3xl ${T.modalBg} border ${T.border} rounded-2xl shadow-2xl p-3`}
+              onClick={(e) => e.stopPropagation()}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ duration: reduceMotion ? 0 : 0.26, ease: [0.22, 1, 0.36, 1] }}
             >
-              ×
-            </button>
-            <div className={`relative w-full h-[72vh] rounded-xl overflow-hidden ${T.modalInner}`}>
-              <Image
-                src={activeFlyer.src}
-                alt={`${activeFlyer.title} flyer preview`}
-                fill
-                className="object-contain"
-                sizes="90vw"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                aria-label="Close flyer preview"
+                onClick={() => setActiveFlyer(null)}
+                className={`absolute right-3 top-3 z-10 w-8 h-8 rounded-full ${T.iconBg} ${T.iconBgHover} ${T.text} text-lg flex items-center justify-center transition-colors`}
+              >
+                ×
+              </button>
+              <div className={`relative w-full h-[72vh] rounded-xl overflow-hidden ${T.modalInner}`}>
+                <ImageWithSkeleton
+                  src={activeFlyer.src}
+                  alt={`${activeFlyer.title} flyer preview`}
+                  fill
+                  className="object-contain"
+                  sizes="90vw"
+                  priority
+                />
+              </div>
+              {activeFlyer.galleryItems && activeFlyer.galleryItems.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = activeFlyer.galleryIndex ?? 0;
+                      const nextIndex = (current - 1 + activeFlyer.galleryItems!.length) % activeFlyer.galleryItems!.length;
+                      const nextItem = activeFlyer.galleryItems![nextIndex];
+                      setActiveFlyer({ ...activeFlyer, src: nextItem.src, title: nextItem.title, galleryIndex: nextIndex });
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 text-white border border-white/15 text-lg flex items-center justify-center transition-colors"
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = activeFlyer.galleryIndex ?? 0;
+                      const nextIndex = (current + 1) % activeFlyer.galleryItems!.length;
+                      const nextItem = activeFlyer.galleryItems![nextIndex];
+                      setActiveFlyer({ ...activeFlyer, src: nextItem.src, title: nextItem.title, galleryIndex: nextIndex });
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 text-white border border-white/15 text-lg flex items-center justify-center transition-colors"
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+              {activeFlyer.title && (
+                <div className="px-2 pt-3 pb-1 text-center">
+                  <p className={`text-sm md:text-base font-semibold tracking-[0.04em] ${T.text} italic`}>
+                    {activeFlyer.title}
+                  </p>
+                  {activeFlyer.galleryItems && activeFlyer.galleryItems.length > 1 && (
+                    <p className={`mt-1 text-xs ${T.textDim}`}>Use Left / Right arrow keys to browse.</p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function ImageWithSkeleton(props: ComponentProps<typeof Image>) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-red-500/12 via-white/10 to-red-400/10 dark:from-red-500/15 dark:via-white/[0.04] dark:to-red-600/12" />
+      )}
+      <Image
+        {...props}
+        onLoad={(event) => {
+          setLoaded(true);
+          props.onLoad?.(event);
+        }}
+      />
+    </>
   );
 }
 
@@ -995,7 +1181,7 @@ function EventsCards({
   emptyMessage: string;
   events: SiteContent["events"];
   textColorClasses: typeof T;
-  setActiveFlyer: (value: { src: string; title: string } | null) => void;
+  setActiveFlyer: (value: ActiveFlyerState | null) => void;
 }) {
   return (
     <>
@@ -1017,7 +1203,11 @@ function EventsCards({
             return (
               <div key={`events-row-${rowIndex}`} className={`grid gap-4 ${colClass}`}>
                 {row.map((event) => (
-                  <article key={event.id} className={`group relative overflow-hidden ${textColorClasses.surf} border ${textColorClasses.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${textColorClasses.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 hover:shadow-[0_0_34px_rgba(239,68,68,0.14)] h-full`}>
+                  <article
+                    key={event.id}
+                    className={`cursor-glow cursor-tilt group relative overflow-hidden ${textColorClasses.surf} border ${textColorClasses.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${textColorClasses.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 hover:shadow-[0_0_34px_rgba(239,68,68,0.14)] h-full`}
+                    onMouseMove={handleCursorGlowMove}
+                  >
                     <div className="flex items-start justify-between mb-5">
                       <div>
                         <div className="text-5xl font-black text-red-500 leading-none">{getDayFromDate(event.date)}</div>
@@ -1036,10 +1226,10 @@ function EventsCards({
                       <button
                         type="button"
                         className={`mt-5 w-full rounded-xl border ${textColorClasses.border} hover:border-gray-300 dark:hover:border-white/15 overflow-hidden transition-all group/flyer`}
-                        onClick={() => setActiveFlyer({ src: event.flyerImage!, title: event.title })}
+                        onClick={() => setActiveFlyer({ src: event.flyerImage!, title: event.title, galleryItems: undefined, galleryIndex: undefined })}
                       >
                         <div className={`relative h-44 ${textColorClasses.flyerBg} overflow-hidden`}>
-                          <Image
+                          <ImageWithSkeleton
                             src={event.flyerImage}
                             alt={`${event.title} flyer`}
                             fill
