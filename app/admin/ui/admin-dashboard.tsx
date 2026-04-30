@@ -8,6 +8,13 @@ type AdminDashboardProps = {
   initialContent: SiteContent;
 };
 
+type AdminGalleryGroup = {
+  key: string;
+  eventId: string | undefined;
+  title: string;
+  images: SiteContent["gallery"];
+};
+
 const buttonClass =
   "px-4 py-2 rounded-xl border border-gray-700 bg-gray-900 text-white hover:bg-black transition-all shadow-sm hover:shadow active:scale-[0.99]";
 const primaryButtonClass =
@@ -19,6 +26,7 @@ const sectionClass =
   "rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur p-6 md:p-7 shadow-[0_10px_35px_rgba(15,23,42,0.06)] space-y-5";
 const EVENT_TYPE_OPTIONS = ["Workshop", "Social", "Panel", "Info Session"];
 const EVENT_STATUS_OPTIONS = ["auto", "upcoming", "past"] as const;
+const GRADUATION_YEAR_OPTIONS = Array.from({ length: 9 }, (_, i) => String(2024 + i));
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   const hour = Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
@@ -32,9 +40,36 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   const [activeSection, setActiveSection] = useState("links");
   const [dirty, setDirty] = useState(false);
   const [customTypeOpen, setCustomTypeOpen] = useState<Record<string, boolean>>({});
+  const [extraGalleryGroups, setExtraGalleryGroups] = useState<string[]>([]);
 
   const hasGallery = useMemo(() => content.gallery.length > 0, [content.gallery.length]);
   const hasAlumni = useMemo(() => content.alumni.length > 0, [content.alumni.length]);
+
+  const galleryGroups = useMemo(
+    () => buildAdminGalleryGroups(content.gallery, content.events),
+    [content.gallery, content.events]
+  );
+  const galleryGroupKeys = useMemo(() => new Set(galleryGroups.map((g) => g.key)), [galleryGroups]);
+  const visibleGalleryGroups = useMemo(() => {
+    const extra = extraGalleryGroups
+      .filter((k) => !galleryGroupKeys.has(k))
+      .map((k): AdminGalleryGroup => {
+        if (k === "__ungrouped") {
+          return { key: "__ungrouped", eventId: undefined, title: "Recent Moments", images: [] };
+        }
+        const event = content.events.find((e) => e.id === k);
+        return { key: k, eventId: k, title: event?.title ?? "Event", images: [] };
+      });
+    return [...galleryGroups, ...extra];
+  }, [galleryGroups, galleryGroupKeys, extraGalleryGroups, content.events]);
+  const eventsWithoutGallery = useMemo(() => {
+    const represented = new Set([...galleryGroupKeys, ...extraGalleryGroups]);
+    return content.events.filter((e) => !represented.has(e.id));
+  }, [content.events, galleryGroupKeys, extraGalleryGroups]);
+  const showUngroupedOption = useMemo(
+    () => !galleryGroupKeys.has("__ungrouped") && !extraGalleryGroups.includes("__ungrouped"),
+    [galleryGroupKeys, extraGalleryGroups]
+  );
 
   const update = (next: SiteContent) => {
     setContent(next);
@@ -96,7 +131,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [dirty]);
 
   useEffect(() => {
-    const sectionIds = ["links", "events", "team", "gallery", "alumni"];
+    const sectionIds = ["links", "events", "team", "gallery", "alumni", "testimonials"];
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -128,6 +163,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
             <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
             <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
+            <AdminNavItem href="#admin-testimonials" label="Testimonials" active={activeSection === "testimonials"} />
           </nav>
         </aside>
 
@@ -314,6 +350,14 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                   <LabeledInput label="Name" value={member.name} onChange={(value) => updateMember(content, member.id, { name: value }, update)} />
                   <LabeledInput label="Role" value={member.role} onChange={(value) => updateMember(content, member.id, { role: value }, update)} />
                   <LabeledInput label="LinkedIn URL" value={member.linkedin} onChange={(value) => updateMember(content, member.id, { linkedin: value }, update)} />
+                  <LabeledDropdown
+                    label="Graduation Year"
+                    value={member.graduationYear ?? ""}
+                    options={["", ...GRADUATION_YEAR_OPTIONS]}
+                    onChange={(value) => updateMember(content, member.id, { graduationYear: value || undefined }, update)}
+                    formatOptionLabel={(option) => option === "" ? "Not specified" : option}
+                  />
+                  <LabeledEmailInput label="Email" value={member.email ?? ""} onChange={(value) => updateMember(content, member.id, { email: value || undefined }, update)} />
                 </div>
                 <LabeledTextArea label="Bio" value={member.bio} onChange={(value) => updateMember(content, member.id, { bio: value }, update)} />
                 <ImageUploadField
@@ -331,72 +375,58 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
         </section>
 
         <section id="admin-gallery" className={sectionClass}>
-          <div className="flex items-center justify-between">
+          <div>
             <h2 className="text-2xl font-semibold text-gray-900">Events Gallery</h2>
-            <button
-              className={buttonClass}
-              onClick={() =>
-                update({
-                  ...content,
-                  gallery: [
-                    ...content.gallery,
-                    {
-                      id: crypto.randomUUID(),
-                      src: "",
-                      alt: "Gallery image",
-                      caption: "",
-                    },
-                  ],
-                })
-              }
-            >
-              Add Gallery Item
-            </button>
+            <p className="text-sm text-gray-500 mt-1">Photos are grouped by event. Select multiple files at once to bulk-upload.</p>
           </div>
 
-          {hasGallery ? (
-            <div className="space-y-6">
-              {content.gallery.map((image) => (
-                <div key={image.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
-                  <div className="flex justify-end">
-                    <button
-                    className={destructiveLinkClass}
-                      onClick={() => update({ ...content, gallery: content.gallery.filter((g) => g.id !== image.id) })}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <LabeledInput label="Alt Text" value={image.alt} onChange={(value) => updateGallery(content, image.id, { alt: value }, update)} />
-                    <LabeledInput label="Caption" value={image.caption ?? ""} onChange={(value) => updateGallery(content, image.id, { caption: value }, update)} />
-                    <LabeledDropdown
-                      label="Linked Event"
-                      value={image.eventId ?? "__none"}
-                      options={[
-                        "__none",
-                        ...content.events.map((event) => event.id),
-                      ]}
-                      onChange={(value) => updateGallery(content, image.id, { eventId: value === "__none" ? undefined : value }, update)}
-                      formatOptionLabel={(option) =>
-                        option === "__none"
-                          ? "None (Recent Moments)"
-                          : content.events.find((event) => event.id === option)?.title ?? option
-                      }
-                    />
-                  </div>
-                  <ImageUploadField
-                    label="Gallery Image"
-                    currentUrl={image.src}
-                    onUpload={async (file) => {
-                      const url = await uploadImage(file, "gallery");
-                      updateGallery(content, image.id, { src: url }, update);
-                    }}
-                  />
-                </div>
-              ))}
+          {visibleGalleryGroups.length === 0 && !hasGallery && (
+            <p className="text-sm text-gray-600">No gallery photos yet. Use the selector below to start uploading.</p>
+          )}
+
+          <div className="space-y-5">
+            {visibleGalleryGroups.map((group) => (
+              <GalleryGroupPanel
+                key={group.key}
+                group={group}
+                onUploadFiles={async (files) => {
+                  const urls = await Promise.all(files.map((f) => uploadImage(f, "gallery")));
+                  const newItems = urls.map((url) => ({
+                    id: crypto.randomUUID(),
+                    src: url,
+                    alt: "Gallery image",
+                    caption: "",
+                    eventId: group.eventId,
+                  }));
+                  update({ ...content, gallery: [...content.gallery, ...newItems] });
+                }}
+                onUpdateCaption={(id, caption) => updateGallery(content, id, { caption }, update)}
+                onRemove={(id) => update({ ...content, gallery: content.gallery.filter((g) => g.id !== id) })}
+              />
+            ))}
+          </div>
+
+          {(eventsWithoutGallery.length > 0 || showUngroupedOption) && (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-4">
+              <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Add photos for another event</p>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 pr-10 text-sm text-gray-700 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+                  value=""
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    setExtraGalleryGroups((prev) => [...prev, e.target.value]);
+                  }}
+                >
+                  <option value="">Select an event...</option>
+                  {eventsWithoutGallery.map((event) => (
+                    <option key={event.id} value={event.id}>{event.title}</option>
+                  ))}
+                  {showUngroupedOption && <option value="__ungrouped">Recent Moments (no event)</option>}
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">▾</span>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-600">No gallery images yet. Add one to start populating the public gallery section.</p>
           )}
         </section>
         <section id="admin-alumni" className={sectionClass}>
@@ -464,6 +494,74 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
           )}
         </section>
 
+        <section id="admin-testimonials" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Testimonials</h2>
+              <p className="text-sm text-gray-500 mt-1">Member quotes shown on the public site. Appears when at least one entry is added.</p>
+            </div>
+            <button
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  testimonials: [
+                    ...content.testimonials,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "Member Name",
+                      graduationYear: new Date().getFullYear().toString(),
+                      major: "Computer Science",
+                      testimonial: "Share your experience with ColorStackRUN.",
+                    },
+                  ],
+                })
+              }
+            >
+              Add Testimonial
+            </button>
+          </div>
+
+          {content.testimonials.length > 0 ? (
+            <div className="space-y-6">
+              {content.testimonials.map((item) => (
+                <div key={item.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                  <div className="flex justify-end">
+                    <button
+                      className={destructiveLinkClass}
+                      onClick={() => update({ ...content, testimonials: content.testimonials.filter((t) => t.id !== item.id) })}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <LabeledInput label="Name" value={item.name} onChange={(value) => updateTestimonial(content, item.id, { name: value }, update)} />
+                    <LabeledDropdown
+                      label="Graduation Year"
+                      value={item.graduationYear}
+                      options={GRADUATION_YEAR_OPTIONS}
+                      onChange={(value) => updateTestimonial(content, item.id, { graduationYear: value }, update)}
+                    />
+                    <LabeledInput label="Major (optional)" value={item.major ?? ""} onChange={(value) => updateTestimonial(content, item.id, { major: value || undefined }, update)} />
+                  </div>
+                  <LabeledTextArea label="Testimonial" value={item.testimonial} onChange={(value) => updateTestimonial(content, item.id, { testimonial: value }, update)} />
+                  <ImageUploadField
+                    label="Headshot (optional)"
+                    currentUrl={item.image}
+                    cropShape="round"
+                    onUpload={async (file) => {
+                      const url = await uploadImage(file, "team");
+                      updateTestimonial(content, item.id, { image: url }, update);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No testimonials yet. Add member quotes to activate this section on the public site.</p>
+          )}
+        </section>
+
         </div>
       </div>
       <Toast toast={toast} />
@@ -518,6 +616,35 @@ function LabeledInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
+    </label>
+  );
+}
+
+function LabeledEmailInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const isValid = !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return (
+    <label className="text-sm text-gray-700 space-y-1.5 block">
+      <span className="font-medium">{label}</span>
+      <input
+        type="email"
+        className={`w-full rounded-xl border bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:ring-2 transition-all ${
+          isValid
+            ? "border-gray-300/90 focus:border-red-500 focus:ring-red-100"
+            : "border-red-400 focus:border-red-500 focus:ring-red-100"
+        }`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="name@domain.com"
+      />
+      {!isValid && <p className="text-xs text-red-600 font-medium">Please enter a valid email address.</p>}
     </label>
   );
 }
@@ -787,6 +914,110 @@ function ImageUploadField({
   );
 }
 
+function GalleryGroupPanel({
+  group,
+  onUploadFiles,
+  onUpdateCaption,
+  onRemove,
+}: {
+  group: AdminGalleryGroup;
+  onUploadFiles: (files: File[]) => Promise<void>;
+  onUpdateCaption: (id: string, caption: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  return (
+    <div className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-semibold text-gray-900">{group.title}</h3>
+        <label className={`${buttonClass} cursor-pointer inline-flex items-center gap-2`}>
+          <span>{uploading ? "Uploading..." : "Add Photos"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            disabled={uploading}
+            onChange={async (e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (!files.length) return;
+              setUploading(true);
+              try {
+                await onUploadFiles(files);
+              } finally {
+                setUploading(false);
+                e.target.value = "";
+              }
+            }}
+          />
+        </label>
+      </div>
+
+      {group.images.length > 0 ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+          {group.images.map((image) => (
+            <div key={image.id} className="space-y-1.5">
+              <div className="relative group/thumb">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full aspect-square object-cover rounded-xl border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => onRemove(image.id)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-all"
+                >
+                  ×
+                </button>
+              </div>
+              <input
+                value={image.caption ?? ""}
+                onChange={(e) => onUpdateCaption(image.id, e.target.value)}
+                placeholder="Caption..."
+                className="w-full text-xs text-gray-900 placeholder:text-gray-400 rounded-lg border border-gray-200 bg-white px-2 py-1.5 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100 transition-all"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 py-1">No photos yet. Click "Add Photos" to upload.</p>
+      )}
+    </div>
+  );
+}
+
+function buildAdminGalleryGroups(
+  gallery: SiteContent["gallery"],
+  events: SiteContent["events"]
+): AdminGalleryGroup[] {
+  const eventById = new Map(events.map((e) => [e.id, e]));
+  const grouped = new Map<string, SiteContent["gallery"]>();
+  const ungrouped: SiteContent["gallery"] = [];
+
+  for (const item of gallery) {
+    if (item.eventId && eventById.has(item.eventId)) {
+      const arr = grouped.get(item.eventId) ?? [];
+      arr.push(item);
+      grouped.set(item.eventId, arr);
+    } else {
+      ungrouped.push(item);
+    }
+  }
+
+  const groups: AdminGalleryGroup[] = events
+    .filter((e) => (grouped.get(e.id)?.length ?? 0) > 0)
+    .map((e) => ({ key: e.id, eventId: e.id, title: e.title, images: grouped.get(e.id) ?? [] }));
+
+  if (ungrouped.length > 0) {
+    groups.push({ key: "__ungrouped", eventId: undefined, title: "Recent Moments", images: ungrouped });
+  }
+
+  return groups;
+}
+
 function updateEvent(content: SiteContent, id: string, patch: Partial<SiteContent["events"][number]>, update: (content: SiteContent) => void) {
   update({
     ...content,
@@ -805,6 +1036,13 @@ function updateGallery(content: SiteContent, id: string, patch: Partial<SiteCont
   update({
     ...content,
     gallery: content.gallery.map((image) => (image.id === id ? { ...image, ...patch } : image)),
+  });
+}
+
+function updateTestimonial(content: SiteContent, id: string, patch: Partial<SiteContent["testimonials"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    testimonials: content.testimonials.map((t) => (t.id === id ? { ...t, ...patch } : t)),
   });
 }
 

@@ -17,6 +17,8 @@ export type TeamMember = {
   role: string;
   bio: string;
   linkedin: string;
+  email?: string;
+  graduationYear?: string;
   image?: string;
 };
 
@@ -47,6 +49,15 @@ export type GalleryImage = {
   eventId?: string;
 };
 
+export type TestimonialItem = {
+  id: string;
+  name: string;
+  graduationYear: string;
+  major?: string;
+  testimonial: string;
+  image?: string;
+};
+
 export type AlumniMember = {
   id: string;
   name: string;
@@ -65,6 +76,7 @@ export type SiteContent = {
   team: TeamMember[];
   gallery: GalleryImage[];
   alumni: AlumniMember[];
+  testimonials: TestimonialItem[];
 };
 
 export const defaultSiteContent: SiteContent = {
@@ -168,4 +180,5 @@ export const defaultSiteContent: SiteContent = {
   ],
   gallery: [],
   alumni: [],
+  testimonials: [],
 };

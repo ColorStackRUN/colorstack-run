@@ -8,23 +8,23 @@
   "stats": [
     {
       "id": "stat-members",
-      "label": "Community",
-      "value": "Growing"
-    },
-    {
-      "id": "stat-events",
-      "label": "Events",
-      "value": "Career-Focused"
+      "label": "Members",
+      "value": "200+"
     },
     {
       "id": "stat-partners",
-      "label": "Connections",
-      "value": "Industry"
+      "label": "Partners",
+      "value": "4+"
     },
     {
       "id": "stat-founded",
-      "label": "2024",
-      "value": "Founded"
+      "label": "Founded",
+      "value": "2024"
+    },
+    {
+      "id": "stat-campus",
+      "label": "Campus",
+      "value": "Newark"
     }
   ],
   "impact": [
@@ -66,6 +66,18 @@
       "type": "Info Session",
       "raiderlinkUrl": "https://raiderlink.newark.rutgers.edu/csdc/rsvp_boot?id=377830",
       "flyerImage": "/uploads/events/4ed7a143-15b8-45b0-9360-4e84eaba886b.png"
+    },
+    {
+      "id": "33763f72-e4f9-4783-a81f-db7e54a8cc10",
+      "title": "Wells Fargo Technology Series",
+      "date": "2026-04-15",
+      "startTime": "18:00",
+      "endTime": "15:50",
+      "location": "PRCC - Essex Room",
+      "type": "Panel",
+      "raiderlinkUrl": "https://raiderlink.newark.rutgers.edu/CSDC/club_signup",
+      "statusOverride": "past",
+      "flyerImage": "/uploads/events/b703189b-0a9e-45bf-af4c-87c46fccd819.png"
     }
   ],
   "team": [
@@ -74,36 +86,45 @@
       "name": "Eren Kahyaoglu",
       "role": "Co-President",
       "bio": "Co-leading chapter strategy, partnerships, and member development initiatives.",
-      "linkedin": "https://www.linkedin.com/in/eren-kahyaoglu/"
+      "linkedin": "https://www.linkedin.com/in/eren-kahyaoglu/",
+      "graduationYear": "2027",
+      "image": "/uploads/team/0a8f855b-c0be-4819-a829-2a223050537d.jpeg"
     },
     {
       "id": "arian-pedram",
       "name": "Arian Pedram",
       "role": "Co-President",
       "bio": "Focused on chapter operations, growth, and high-impact campus programming.",
-      "linkedin": "https://www.linkedin.com/in/arian-pedram/"
+      "linkedin": "https://www.linkedin.com/in/arian-pedram/",
+      "graduationYear": "2028",
+      "image": "/uploads/team/fad0f885-1b5c-4707-83a3-8bf8ab6e6110.jpeg"
     },
     {
       "id": "jorge-ceballos",
       "name": "Jorge Ceballos",
       "role": "Vice President",
-      "bio": "Leads chapter execution across events, partnerships, and member experience.",
+      "bio": "Inspired by the impact ColorStack has had on his own journey, Jorge is passionate about creating opportunities and connections that help others break into tech.",
       "linkedin": "https://www.linkedin.com/in/ceballosjorge/",
-      "image": "/uploads/team/dcfd6d35-0971-49a0-804c-fc444b84d969.jpeg"
+      "image": "/uploads/team/dcfd6d35-0971-49a0-804c-fc444b84d969.jpeg",
+      "graduationYear": "2028",
+      "email": "jorge.ceballos@rutgers.edu"
     },
     {
       "id": "eric-huang",
       "name": "Eric Huang",
       "role": "Secretary",
       "bio": "Coordinates communications and keeps chapter operations organized and on track.",
-      "linkedin": "https://www.linkedin.com/in/eczh/"
+      "linkedin": "https://www.linkedin.com/in/eczh/",
+      "graduationYear": "2026"
     },
     {
       "id": "obianuju-enekebe",
       "name": "Obianuju Enekebe",
       "role": "Treasurer",
       "bio": "Manages chapter finances and ensures resources are aligned with member impact.",
-      "linkedin": "https://www.linkedin.com/in/obianuju-enekebe/"
+      "linkedin": "https://www.linkedin.com/in/obianuju-enekebe/",
+      "graduationYear": "2026",
+      "image": "/uploads/team/6af306a7-8838-48ec-a4cb-696447d0ade1.jpeg"
     }
   ],
   "gallery": [
@@ -111,8 +132,43 @@
       "id": "6885e3d5-9baa-4014-8416-d096bad01e33",
       "src": "/uploads/gallery/128f7adb-0362-4c0b-8df4-b9d82533a33a.jpg",
       "alt": "HackFest 2025 Winners",
-      "caption": "HackFest 2025 1st Place Team",
+      "caption": "HackFest 1st Place Team",
       "eventId": "event-hackfest-2025"
+    },
+    {
+      "id": "639d4b1c-835f-402a-abe9-bf56294fea3d",
+      "src": "/uploads/gallery/f63feaac-e44c-42fa-b502-16c833504e87.jpg",
+      "alt": "Gallery image",
+      "caption": "",
+      "eventId": "33763f72-e4f9-4783-a81f-db7e54a8cc10"
+    },
+    {
+      "id": "156f47cc-41d1-4bd8-bc58-31d51988a8d0",
+      "src": "/uploads/gallery/b9b18946-15e6-4481-8918-dd97856e74cd.jpg",
+      "alt": "Gallery image",
+      "caption": "",
+      "eventId": "33763f72-e4f9-4783-a81f-db7e54a8cc10"
+    },
+    {
+      "id": "f29468eb-2c75-4544-963a-c964bebe32bc",
+      "src": "/uploads/gallery/82176299-5f53-4d4b-9a7d-a5ac7c9302a6.jpg",
+      "alt": "Gallery image",
+      "caption": "",
+      "eventId": "33763f72-e4f9-4783-a81f-db7e54a8cc10"
+    },
+    {
+      "id": "3dc6db78-6921-4ef0-a79b-7d3de04e0f92",
+      "src": "/uploads/gallery/5c7e7c48-b2a1-4aa1-b2aa-137bfa3f3642.jpg",
+      "alt": "Gallery image",
+      "caption": "",
+      "eventId": "33763f72-e4f9-4783-a81f-db7e54a8cc10"
+    },
+    {
+      "id": "8fb0c49a-22aa-4878-99d3-ce3efaab6315",
+      "src": "/uploads/gallery/632e07d9-94a5-4ac8-ba9f-ace4945ec154.jpg",
+      "alt": "Gallery image",
+      "caption": "",
+      "eventId": "33763f72-e4f9-4783-a81f-db7e54a8cc10"
     }
   ],
   "alumni": [
@@ -133,6 +189,29 @@
       "graduationYear": "2024",
       "linkedin": "https://www.linkedin.com/in/omar-elbaz-/",
       "image": "/uploads/alumni/2dd0e5aa-3693-469a-bb57-33b546d30e78.jpg"
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "testimonial-1",
+      "name": "Marcus Johnson",
+      "graduationYear": "2026",
+      "major": "Computer Science",
+      "testimonial": "ColorStackRUN gave me the confidence to land my first tech internship. The mock interviews and resume workshops made all the difference when competing against students from much larger schools."
+    },
+    {
+      "id": "testimonial-2",
+      "name": "Sofia Ramirez",
+      "graduationYear": "2025",
+      "major": "Information Technology",
+      "testimonial": "Being surrounded by people who look like me and share my goals changed everything. This community pushed me to think bigger and gave me the network to make it happen."
+    },
+    {
+      "id": "testimonial-3",
+      "name": "Aiden Okonkwo",
+      "graduationYear": "2027",
+      "major": "Computer Science",
+      "testimonial": "From my very first event I felt like I belonged. ColorStackRUN connects you with professionals and peers who genuinely want to see you succeed — that kind of support is rare."
     }
   ]
 }

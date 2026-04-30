@@ -31,9 +31,9 @@ const T = {
   surfAlumni:  "bg-white             dark:bg-[#111111]",
   footer:      "bg-gray-950",
   text:        "text-gray-900        dark:text-white",
-  textMuted:   "text-gray-700        dark:text-white/55",
-  textFaint:   "text-gray-600        dark:text-white/40",
-  textDim:     "text-gray-500        dark:text-white/25",
+  textMuted:   "text-gray-700        dark:text-white/72",
+  textFaint:   "text-gray-600        dark:text-white/52",
+  textDim:     "text-gray-500        dark:text-white/36",
   border:      "border-gray-100      dark:border-white/[0.07]",
   border2:     "border-gray-200      dark:border-white/10",
   border3:     "border-gray-300      dark:border-white/20",
@@ -65,12 +65,14 @@ export function LandingPage({ content }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFlyer, setActiveFlyer] = useState<{ src: string; title: string } | null>(null);
   const [isDark, setIsDark]     = useState(true);
+  const [flippedCard, setFlippedCard] = useState<string | null>(null);
 
-  const { links, events, stats, team, impact, gallery, alumni } = content;
+  const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
   const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents);
   const gallerySections = buildGallerySections(gallery, sortedEvents);
   const [eventsView, setEventsView] = useState<"upcoming" | "past">("upcoming");
+  const [activeGalleryTab, setActiveGalleryTab] = useState(0);
   const activeEvents = eventsView === "upcoming" ? upcomingEvents : pastEvents;
 
   // Initialise from localStorage / system pref after mount (avoids hydration mismatch)
@@ -105,7 +107,6 @@ export function LandingPage({ content }: LandingPageProps) {
 
   return (
     <div className={`${T.page} ${T.selection} ${isDark ? "dark" : "light"}`}>
-
       {/* ── Navigation ── */}
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
@@ -141,6 +142,11 @@ export function LandingPage({ content }: LandingPageProps) {
                   {label}
                 </a>
               ))}
+              {gallery.length > 0 && (
+                <a href="#gallery" className={`px-4 py-2 text-sm ${T.textMuted} hover:${T.text} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}>
+                  Gallery
+                </a>
+              )}
               {alumni.length > 0 && (
                 <a href="#alumni" className={`px-4 py-2 text-sm ${T.textMuted} hover:${T.text} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`}>
                   Alumni
@@ -160,7 +166,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 href={links.join}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-3 px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-all hover:shadow-lg hover:shadow-red-600/25 hover:scale-[1.02]"
+                className="ml-3 px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-all hover:shadow-lg hover:shadow-red-600/25 hover:shadow-[0_0_30px_rgba(239,68,68,0.28)] hover:scale-[1.02]"
               >
                 Join Us
               </a>
@@ -202,6 +208,11 @@ export function LandingPage({ content }: LandingPageProps) {
                   {label}
                 </a>
               ))}
+              {gallery.length > 0 && (
+                <a href="#gallery" className={`block px-3 py-2.5 text-sm ${T.textMuted} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`} onClick={() => setMobileMenuOpen(false)}>
+                  Gallery
+                </a>
+              )}
               {alumni.length > 0 && (
                 <a href="#alumni" className={`block px-3 py-2.5 text-sm ${T.textMuted} rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all`} onClick={() => setMobileMenuOpen(false)}>
                   Alumni
@@ -235,77 +246,86 @@ export function LandingPage({ content }: LandingPageProps) {
           {Array.from({ length: 14 }).map((_, i) => <span key={i} className="particle-dot" />)}
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-12 pt-28 pb-24 text-center">
-          <Reveal>
-            <div className={`inline-flex items-center gap-2.5 px-4 py-2 ${T.badge} border rounded-full text-xs font-medium mb-10 tracking-wide uppercase`}>
-              <span className="relative flex h-2 w-2">
-                <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-              </span>
-              Rutgers University–Newark Chapter
-            </div>
-          </Reveal>
+        <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-28 pb-24">
+          {/* Two-column hero: logo left, content right */}
+          <div className="grid lg:grid-cols-[340px_1fr] gap-10 lg:gap-20 items-center">
 
-          <Reveal>
-            <div className="mb-8">
-              <div className="flex justify-center mb-6">
+            {/* ── Left: Big logo ── */}
+            <Reveal direction="left">
+              <div className="flex justify-center lg:justify-start">
                 <Image
                   src="/colorstack_run_logo_red_4.png"
                   alt="ColorStack Rutgers Newark logo"
-                  width={84}
-                  height={84}
-                  className={`w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border ${T.border2} shadow-lg shadow-red-500/10`}
+                  width={340}
+                  height={340}
+                  className={`w-48 h-48 md:w-64 md:h-64 lg:w-[340px] lg:h-[340px] rounded-full object-cover border-2 ${T.border2} shadow-2xl shadow-red-500/10`}
                   priority
                 />
               </div>
-              <h1 className={`text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.98] mb-4 ${T.text}`}>
-                Welcome to
-              </h1>
-              <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.98] bg-gradient-to-r from-red-600 via-red-500 to-rose-500 dark:from-red-500 dark:via-red-400 dark:to-rose-400 bg-clip-text text-transparent">
-                ColorStack<span className={T.text}>RUN</span>
-              </h2>
-              <p className={`text-base md:text-lg ${T.textDim} mt-4 uppercase tracking-[0.14em] font-semibold`}>
-                Rutgers University–Newark
-              </p>
-            </div>
-          </Reveal>
+            </Reveal>
 
-          <Reveal>
-            <p className={`text-lg md:text-xl ${T.textMuted} mb-12 max-w-3xl mx-auto leading-relaxed`}>
-              The official ColorStack chapter building a stronger pathway for Black and Latinx students in tech through mentorship, career development, and community.
-            </p>
-          </Reveal>
+            {/* ── Right: Content ── */}
+            <Reveal direction="right">
+              <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
+                {/* Badge */}
+                <div className={`inline-flex items-center gap-2.5 px-4 py-2 ${T.badge} border rounded-full text-xs font-medium tracking-wide uppercase`}>
+                  <span className="relative flex h-2 w-2">
+                    <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  Rutgers University–Newark Chapter
+                </div>
 
-          <Reveal>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <a
-                href={links.join}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-full transition-all hover:shadow-xl hover:shadow-red-600/30 hover:scale-[1.03]"
-              >
-                Join the Community
-                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-              </a>
-              <a
-                href="#events"
-                className={`inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all`}
-              >
-                Explore Events <span>↓</span>
-              </a>
-            </div>
-          </Reveal>
+                {/* Headline */}
+                <div>
+                  <h1 className={`text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.98] mb-3 ${T.text}`}>
+                    Welcome to
+                  </h1>
+                  <h2 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.98] bg-gradient-to-r from-red-600 via-red-500 to-rose-500 dark:from-red-500 dark:via-red-400 dark:to-rose-400 bg-clip-text text-transparent">
+                    ColorStack<span className={T.text}> - RUN</span>
+                  </h2>
+                  <p className={`text-base md:text-lg ${T.textDim} mt-4 uppercase tracking-[0.14em] font-semibold`}>
+                    Rutgers University–Newark
+                  </p>
+                </div>
 
-          <Reveal>
-            <div className={`flex items-center justify-center gap-5 mt-8 text-sm ${T.textDim}`}>
-              <a href={links.instagram} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>Instagram</a>
-              <span>·</span>
-              <a href={links.linkedin} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>LinkedIn</a>
-              <span>·</span>
-              <a href={`mailto:${links.email}`} className={`hover:${T.text} transition-colors`}>Email Us</a>
-            </div>
-          </Reveal>
+                {/* Description */}
+                <p className={`text-lg md:text-xl ${T.textMuted} leading-relaxed max-w-lg`}>
+                  The official ColorStack chapter building a stronger pathway for Black and Latinx students in tech through mentorship, career development, and community.
+                </p>
 
+                {/* CTAs */}
+                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                  <a
+                    href={links.join}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-2 px-7 py-3.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-full transition-all hover:shadow-xl hover:shadow-red-600/30 hover:shadow-[0_0_34px_rgba(239,68,68,0.3)] hover:scale-[1.03]"
+                  >
+                    Join the Community
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </a>
+                  <a
+                    href="#events"
+                    className={`inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.14)]`}
+                  >
+                    Explore Events <span>↓</span>
+                  </a>
+                </div>
+
+                {/* Social links */}
+                <div className={`flex items-center gap-5 text-sm ${T.textDim}`}>
+                  <a href={links.instagram} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>Instagram</a>
+                  <span>·</span>
+                  <a href={links.linkedin} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>LinkedIn</a>
+                  <span>·</span>
+                  <a href={`mailto:${links.email}`} className={`hover:${T.text} transition-colors`}>Email Us</a>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Stats — full width below both columns */}
           <Reveal>
             <div className={`mt-20 pt-10 border-t ${T.border} grid grid-cols-2 md:grid-cols-4 gap-6`}>
               {stats.map((stat) => (
@@ -390,7 +410,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 ].map((item) => (
                   <div
                     key={item.title}
-                    className={`group flex gap-4 p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border ${T.border} hover:border-red-500/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all cursor-default`}
+                    className={`group flex gap-4 p-5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border ${T.border} hover:border-red-500/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all hover:shadow-[0_0_30px_rgba(239,68,68,0.12)] cursor-default`}
                   >
                     <div className="shrink-0 w-10 h-10 rounded-xl bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:bg-red-600/12 dark:group-hover:bg-red-600/15 transition-colors">
                       {item.icon}
@@ -421,7 +441,7 @@ export function LandingPage({ content }: LandingPageProps) {
           <div className="grid md:grid-cols-3 gap-4">
             {impact.map((item, i) => (
               <Reveal key={item.id}>
-                <div className={`relative overflow-hidden group p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 dark:hover:border-red-500/25 hover:border-red-200 transition-all card-shimmer shadow-sm dark:shadow-none`}>
+                <div className={`relative overflow-hidden group p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 dark:hover:border-red-500/25 hover:border-red-200 transition-all card-shimmer shadow-sm dark:shadow-none hover:shadow-[0_0_34px_rgba(239,68,68,0.14)]`}>
                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-600 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity rounded-l-2xl" />
                   <div className="w-8 h-8 rounded-lg bg-red-600/08 dark:bg-red-600/10 border border-red-500/20 flex items-center justify-center mb-5">
                     <span className="text-red-500 text-sm font-bold">{String(i + 1).padStart(2, "0")}</span>
@@ -434,6 +454,56 @@ export function LandingPage({ content }: LandingPageProps) {
           </div>
         </div>
       </MotionSection>
+
+      {/* ── Testimonials ── */}
+      {testimonials.length > 0 && (
+        <MotionSection className={`py-24 px-6 lg:px-12 ${T.page}`}>
+          <div className="max-w-7xl mx-auto">
+            <Reveal>
+              <div className="text-center mb-14">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Member Stories</p>
+                <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>
+                  Hear from our community
+                </h2>
+              </div>
+            </Reveal>
+            <div className="grid md:grid-cols-3 gap-5">
+              {testimonials.map((item) => {
+                const initials = item.name.split(" ").map((p) => p[0]).join("").slice(0, 2);
+                return (
+                  <Reveal key={item.id}>
+                    <div className={`relative flex flex-col p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 transition-all h-full shadow-sm dark:shadow-none hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}>
+                      <span className="text-red-500 text-5xl font-black leading-none select-none mb-2">"</span>
+                      <p className={`${T.textMuted} text-sm leading-relaxed flex-1`}>{item.testimonial}</p>
+                      <div className={`flex items-center gap-3 mt-6 pt-5 border-t ${T.border}`}>
+                        {item.image ? (
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                            <span className="text-red-500 text-sm font-bold">{initials}</span>
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className={`font-semibold text-sm ${T.text}`}>{item.name}</p>
+                          <p className={`text-xs ${T.textDim}`}>
+                            Class of {item.graduationYear}{item.major ? ` · ${item.major}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+        </MotionSection>
+      )}
 
       {/* ── Events ── */}
       <MotionSection id="events" className={`py-28 px-6 lg:px-12 ${T.pageAlt}`}>
@@ -491,41 +561,63 @@ export function LandingPage({ content }: LandingPageProps) {
         <MotionSection id="gallery" className={`py-24 px-6 lg:px-12 ${T.pageAlt}`}>
           <div className="max-w-7xl mx-auto">
             <Reveal>
-              <div className="text-center mb-14">
+              <div className="text-center mb-10">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Gallery</p>
                 <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>Moments by event</h2>
               </div>
             </Reveal>
-            <div className="space-y-10">
-              {gallerySections.map((section) => (
-                <div key={section.id} className="space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <h3 className={`text-2xl md:text-3xl font-bold tracking-tight ${T.text}`}>{section.title}</h3>
-                    {section.subtitle && <p className={`text-sm ${T.textMuted}`}>{section.subtitle}</p>}
-                  </div>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {section.images.map((item) => (
-                      <Reveal key={item.id}>
-                        <figure className={`rounded-2xl overflow-hidden border ${T.border} ${T.surf} group cursor-default`}>
-                          <div className="relative aspect-[4/3] overflow-hidden">
-                            <Image
-                              src={item.src}
-                              alt={item.alt}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-700"
-                              sizes="(max-width: 1024px) 50vw, 33vw"
-                            />
-                          </div>
-                          {item.caption && (
-                            <figcaption className={`px-4 py-3 text-sm ${T.textFaint}`}>{item.caption}</figcaption>
-                          )}
-                        </figure>
-                      </Reveal>
-                    ))}
-                  </div>
+
+            {/* Tabs */}
+            <Reveal>
+              <div className="flex flex-wrap gap-2 mb-8">
+                {gallerySections.map((section, i) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveGalleryTab(i)}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                      activeGalleryTab === i
+                        ? "bg-red-600 text-white shadow-sm hover:shadow-[0_0_26px_rgba(239,68,68,0.24)]"
+                        : `${T.textMuted} bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.12)]`
+                    }`}
+                  >
+                    {section.title}
+                  </button>
+                ))}
+              </div>
+            </Reveal>
+
+            {/* Active tab content */}
+            {gallerySections[activeGalleryTab] && (
+              <motion.div
+                key={gallerySections[activeGalleryTab].id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {gallerySections[activeGalleryTab].subtitle && (
+                  <p className={`text-sm ${T.textMuted} mb-6`}>{gallerySections[activeGalleryTab].subtitle}</p>
+                )}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gallerySections[activeGalleryTab].images.map((item) => (
+                    <figure key={item.id} className={`rounded-2xl overflow-hidden border ${T.border} ${T.surf} group cursor-default transition-all hover:border-red-400/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}>
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <Image
+                          src={item.src}
+                          alt={item.alt}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                          sizes="(max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
+                      {item.caption && (
+                        <figcaption className={`px-4 py-3 text-sm ${T.textFaint}`}>{item.caption}</figcaption>
+                      )}
+                    </figure>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </motion.div>
+            )}
           </div>
         </MotionSection>
       )}
@@ -538,13 +630,13 @@ export function LandingPage({ content }: LandingPageProps) {
         <div className="relative [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="flex gap-16 animate-marquee whitespace-nowrap">
             {[...PARTNERS, ...PARTNERS].map((partner, i) => (
-              <div key={`${partner.name}-${i}`} className="h-12 w-40 shrink-0 flex items-center justify-center">
+              <div key={`${partner.name}-${i}`} className="h-14 w-44 shrink-0 flex items-center justify-center px-5 rounded-xl bg-transparent dark:bg-white/90 dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] transition-all">
                 <Image
                   src={partner.src}
                   alt={`${partner.name} logo`}
                   width={160}
                   height={48}
-                  className="max-h-10 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
+                  className="max-h-9 w-auto object-contain opacity-70 hover:opacity-100 dark:opacity-90 dark:hover:opacity-100 transition-opacity"
                 />
               </div>
             ))}
@@ -554,7 +646,7 @@ export function LandingPage({ content }: LandingPageProps) {
 
       {/* ── Team ── */}
       <MotionSection id="team" className={`py-28 md:py-36 px-6 lg:px-12 ${T.page}`}>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <Reveal>
             <div className="text-center mb-14">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Executive Board</p>
@@ -562,64 +654,131 @@ export function LandingPage({ content }: LandingPageProps) {
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5 md:gap-6">
             {team.map((member) => {
+              const isFlipped = flippedCard === member.id;
               const initials = member.name.split(" ").map((p) => p[0]).join("").slice(0, 2);
               return (
                 <Reveal key={member.id}>
-                  <div className="group relative rounded-2xl overflow-hidden cursor-pointer" style={{ aspectRatio: "3/4" }}>
-                    {member.image ? (
-                      <div className="absolute inset-0">
-                        <Image
-                          src={member.image}
-                          alt={member.name}
-                          fill
-                          className="object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 20vw"
-                        />
+                  {/* Perspective wrapper — sets up 3D space */}
+                  <div
+                    className="group relative select-none"
+                    style={{ perspective: "1200px", aspectRatio: "3/4" }}
+                    onClick={() => setFlippedCard(isFlipped ? null : member.id)}
+                  >
+                    <motion.div
+                      className="relative w-full h-full cursor-pointer"
+                      style={{ transformStyle: "preserve-3d" }}
+                      animate={{ rotateY: isFlipped ? 180 : 0 }}
+                      whileHover={!isFlipped ? { y: -8, scale: 1.015 } : undefined}
+                      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                    >
+
+                      {/* ── FRONT FACE ── */}
+                      <div
+                        className="absolute inset-0 rounded-2xl overflow-hidden"
+                        style={{ backfaceVisibility: "hidden" }}
+                      >
+                        {member.image ? (
+                          <Image
+                            src={member.image}
+                            alt={member.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-red-100 via-gray-100 to-gray-200 dark:from-red-950/80 dark:via-zinc-900 dark:to-black">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-[80px] font-black text-black/[0.05] dark:text-white/[0.08] select-none">{initials}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Gradient overlays */}
+                        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+
+                        {/* Role + Name at top */}
+                        <div className="absolute top-4 left-4 right-4">
+                          <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mb-1">{member.role}</p>
+                          <h3 className="text-white font-bold text-xl leading-tight">{member.name}</h3>
+                        </div>
+
+                        {/* Graduation year tag — top right */}
+                        {member.graduationYear && (
+                          <div className="absolute top-4 right-4">
+                            <span className="inline-flex px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white/80 text-[10px] font-semibold border border-white/20">
+                              Class of {member.graduationYear}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* "View Bio" hint — slides up on group hover */}
+                        <div className="absolute bottom-5 inset-x-0 flex justify-center translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/55 backdrop-blur-sm rounded-full text-white text-xs font-medium border border-white/20">
+                            <FlipIcon /> View Bio
+                          </span>
+                        </div>
+
+                        {/* Border glow */}
+                        <div className="absolute inset-0 rounded-2xl border border-transparent group-hover:border-red-500/40 transition-colors duration-300 pointer-events-none" />
                       </div>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-red-100 via-gray-100 to-gray-200 dark:from-red-950/80 dark:via-zinc-900 dark:to-black">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-[80px] font-black text-black/[0.05] dark:text-white/[0.08] select-none">{initials}</span>
+
+                      {/* ── BACK FACE ── */}
+                      <div
+                        className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-900 to-black border border-white/[0.08]"
+                        style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                      >
+                        {/* Red accent bar at top */}
+                        <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-600 to-red-500" />
+
+                        <div className="flex flex-col h-full p-5 pt-6">
+                          {/* Avatar + name */}
+                          <div className="flex items-center gap-3 mb-5">
+                            {member.image ? (
+                              <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0">
+                                <Image src={member.image} alt={member.name} fill className="object-cover" sizes="48px" />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0">
+                                <span className="text-red-400 text-sm font-bold">{initials}</span>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest truncate">{member.role}</p>
+                              <h3 className="text-white font-bold text-base leading-tight">{member.name}</h3>
+                            </div>
+                          </div>
+
+                          {/* Bio */}
+                          <p className="text-white/78 text-sm leading-relaxed flex-1">{member.bio}</p>
+
+                          {/* Social buttons */}
+                          <div className="flex gap-2 mt-5">
+                            <a
+                              href={member.linkedin}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-xs font-semibold transition-all"
+                            >
+                              <LinkedInIcon /> LinkedIn
+                            </a>
+                            <a
+                              href={`mailto:${member.email ?? links.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-xs font-semibold transition-all"
+                            >
+                              <MailIcon /> Email
+                            </a>
+                          </div>
+
+                          <p className="text-white/40 text-[10px] text-center mt-3">Click to close</p>
                         </div>
                       </div>
-                    )}
 
-                    {/* Overlays — always dark so text is readable over any photo */}
-                    <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/70 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/55 to-transparent" />
-
-                    <div className="absolute top-4 left-4 right-4">
-                      <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mb-1">{member.role}</p>
-                      <h3 className="text-white font-bold text-base leading-tight">{member.name}</h3>
-                    </div>
-
-                    <div className="absolute bottom-0 inset-x-0 p-4">
-                      <p className="text-white/55 text-xs leading-relaxed line-clamp-2 mb-3">{member.bio}</p>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={member.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={`${member.name} LinkedIn`}
-                        >
-                          <LinkedInIcon />
-                        </a>
-                        <a
-                          href={`mailto:${links.email}`}
-                          className="flex items-center justify-center w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={`Email ${member.name}`}
-                        >
-                          <MailIcon />
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="absolute inset-0 rounded-2xl border border-transparent group-hover:border-red-500/30 transition-colors pointer-events-none" />
+                    </motion.div>
                   </div>
                 </Reveal>
               );
@@ -651,7 +810,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 return (
                   <Reveal key={member.id}>
                     <div
-                      className={`group rounded-2xl overflow-hidden ${T.surfAlumni} transition-all hover:-translate-y-1 hover:shadow-2xl`}
+                      className={`group rounded-2xl overflow-hidden ${T.surfAlumni} transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[0_0_34px_rgba(239,68,68,0.12)]`}
                       style={{ border: `1.5px solid ${accent}40` }}
                     >
                       <div className="relative aspect-[4/3] overflow-hidden">
@@ -724,13 +883,13 @@ export function LandingPage({ content }: LandingPageProps) {
                 href={links.join}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-7 py-3.5 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-lg hover:shadow-red-900/20 hover:scale-[1.02] text-base"
+                className="px-7 py-3.5 bg-white text-red-700 font-bold rounded-full hover:bg-gray-100 transition-all hover:shadow-lg hover:shadow-red-900/20 hover:shadow-[0_0_32px_rgba(239,68,68,0.28)] hover:scale-[1.02] text-base"
               >
                 Join on RaiderLink
               </a>
               <a
                 href={`mailto:${links.email}`}
-                className="px-7 py-3.5 border border-white/25 hover:border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-all text-base"
+                className="px-7 py-3.5 border border-white/25 hover:border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.16)] text-base"
               >
                 Contact Us
               </a>
@@ -740,7 +899,7 @@ export function LandingPage({ content }: LandingPageProps) {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-gray-950 border-t border-white/06 text-white/40 py-14 px-6 lg:px-12">
+      <footer className="bg-gray-950 border-t border-white/06 text-white/55 py-14 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-2">
@@ -858,7 +1017,7 @@ function EventsCards({
             return (
               <div key={`events-row-${rowIndex}`} className={`grid gap-4 ${colClass}`}>
                 {row.map((event) => (
-                  <article key={event.id} className={`group relative overflow-hidden ${textColorClasses.surf} border ${textColorClasses.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${textColorClasses.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 h-full`}>
+                  <article key={event.id} className={`group relative overflow-hidden ${textColorClasses.surf} border ${textColorClasses.border} hover:border-red-400/40 rounded-2xl p-7 transition-all ${textColorClasses.cardHover} card-shimmer shadow-sm dark:shadow-none hover:shadow-lg hover:shadow-red-500/5 hover:shadow-[0_0_34px_rgba(239,68,68,0.14)] h-full`}>
                     <div className="flex items-start justify-between mb-5">
                       <div>
                         <div className="text-5xl font-black text-red-500 leading-none">{getDayFromDate(event.date)}</div>
@@ -909,7 +1068,7 @@ function EventsCards({
                             href={event.raiderlinkUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-full transition-all"
+                            className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.28)]"
                           >
                             RaiderLink →
                           </a>
@@ -928,6 +1087,13 @@ function EventsCards({
 }
 
 /* ── Inline icons ── */
+function FlipIcon() {
+  return (
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+    </svg>
+  );
+}
 function LinkedInIcon() {
   return (
     <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
