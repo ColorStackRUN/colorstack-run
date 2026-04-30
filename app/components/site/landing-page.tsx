@@ -64,7 +64,7 @@ export function LandingPage({ content }: LandingPageProps) {
   const [scrollY, setScrollY]   = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFlyer, setActiveFlyer] = useState<{ src: string; title: string } | null>(null);
-  const [isDark, setIsDark]     = useState(true);
+  const [isDark, setIsDark]     = useState(false);
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
 
   const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
@@ -80,9 +80,9 @@ export function LandingPage({ content }: LandingPageProps) {
     const stored = localStorage.getItem("colorstack-theme");
     if (stored) {
       setIsDark(stored === "dark");
-    } else {
-      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
+      return;
     }
+    setIsDark(false);
   }, []);
 
   const toggleTheme = () => {

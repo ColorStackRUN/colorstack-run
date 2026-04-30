@@ -6,6 +6,10 @@ import { type SiteContent } from "@/app/lib/content-types";
 export const runtime = "nodejs";
 
 export async function GET() {
+  const authed = await isAdminAuthenticated();
+  if (!authed) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const content = await readSiteContent();
   return NextResponse.json(content);
 }

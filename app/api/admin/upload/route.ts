@@ -7,6 +7,13 @@ import { isAdminAuthenticated } from "@/app/lib/admin-auth";
 export const runtime = "nodejs";
 
 const allowedScopes = new Set(["events", "team", "gallery", "alumni"]);
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Map<string, string>([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/gif", "gif"],
+]);
 
 export async function POST(request: Request) {
   const authed = await isAdminAuthenticated();
@@ -26,12 +33,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid upload scope." }, { status: 400 });
   }
 
-  if (!file.type.startsWith("image/")) {
+  const extension = ALLOWED_IMAGE_TYPES.get(file.type);
+  if (!extension) {
     return NextResponse.json({ error: "Only image uploads are allowed." }, { status: 400 });
   }
 
-  const ext = file.name.includes(".") ? file.name.split(".").pop() : "png";
-  const fileName = `${randomUUID()}.${ext}`;
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({ error: "File too large (max 8MB)." }, { status: 400 });
+  }
+
+  const fileName = `${randomUUID()}.${extension}`;
   const relativePath = `/uploads/${scope}/${fileName}`;
   const absolutePath = path.join(process.cwd(), "public", relativePath);
 
