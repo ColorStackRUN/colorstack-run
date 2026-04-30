@@ -34,7 +34,14 @@ Set up environment variables:
 cp .env.example .env.local
 ```
 
-Then set a strong value for `ADMIN_DASHBOARD_PASSWORD`.
+Then set strong values for:
+
+- `ADMIN_DASHBOARD_PASSWORD`
+- `ADMIN_SESSION_SECRET`
+- `NEXT_PUBLIC_SITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET` (optional, defaults to `site-media`)
 
 Visit `/admin/login` to sign in. Admin users can:
 
@@ -43,4 +50,18 @@ Visit `/admin/login` to sign in. Admin users can:
 - update e-board portraits and bios
 - upload and manage event gallery images
 
-Changes are saved to `data/site-content.json` and appear on the public site immediately.
+Changes are persisted to Supabase Postgres (`site_content_store`).
+Supabase env vars are required for admin writes.
+
+## Supabase Migration (Images + Content)
+
+1. Apply SQL migration:
+   - `supabase/migrations/20260430153000_site_content_and_storage.sql`
+2. Set env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optional `SUPABASE_STORAGE_BUCKET`).
+3. Run backfill + seed:
+
+```bash
+pnpm supabase:migrate-content
+```
+
+This command uploads existing `public/uploads/**` files to Supabase Storage and seeds `public.site_content_store` (row `id = 'primary'`) with URL-rewritten content.

@@ -1,8 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/app/lib/admin-auth";
+import {
+  getSupabaseAdminClient,
+  getSupabaseStorageBucket,
+  isSupabaseConfigured,
+} from "@/app/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
@@ -19,6 +22,12 @@ export async function POST(request: Request) {
   const authed = await isAdminAuthenticated();
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      { error: "Supabase is not configured for uploads." },
+      { status: 503 }
+    );
   }
 
   const formData = await request.formData();
@@ -42,13 +51,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "File too large (max 8MB)." }, { status: 400 });
   }
 
-  const fileName = `${randomUUID()}.${extension}`;
-  const relativePath = `/uploads/${scope}/${fileName}`;
-  const absolutePath = path.join(process.cwd(), "public", relativePath);
+  const storagePath = `uploads/${scope}/${randomUUID()}.${extension}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const supabase = getSupabaseAdminClient();
+  const bucket = getSupabaseStorageBucket();
 
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  const arrayBuffer = await file.arrayBuffer();
-  await fs.writeFile(absolutePath, Buffer.from(arrayBuffer));
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(storagePath, bytes, {
+      contentType: file.type,
+      upsert: false,
+    });
+  if (uploadError) {
+    return NextResponse.json(
+      { error: `Upload failed: ${uploadError.message}` },
+      { status: 500 }
+    );
+  }
 
-  return NextResponse.json({ url: relativePath });
+  const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+  return NextResponse.json({ url: data.publicUrl });
 }
