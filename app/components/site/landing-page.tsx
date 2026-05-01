@@ -22,13 +22,6 @@ type ActiveAlumniStoryState = {
   accent: string;
 };
 
-const PARTNERS = [
-  { name: "CoreWeave", src: "/uploads/Companies/coreweave%20logo.webp" },
-  { name: "Fiserv", src: "/uploads/Companies/Fiserv_logo.svg.png" },
-  { name: "Jasfel Analytics", src: "/uploads/Companies/jasfel-logo.png" },
-  { name: "Wells Fargo", src: "/uploads/Companies/wells%20fargo.png" },
-];
-
 const ALUMNI_COLORS = [
   "#dc2626", "#9333ea", "#ea580c", "#16a34a", "#ca8a04", "#0891b2",
 ];
@@ -78,8 +71,8 @@ function handleCursorGlowMove(event: MouseEvent<HTMLElement>) {
   const rect = event.currentTarget.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
-  const tiltY = ((x / rect.width) - 0.5) * 5;
-  const tiltX = -((y / rect.height) - 0.5) * 5;
+  const tiltY = ((x / rect.width) - 0.5) * 12;
+  const tiltX = -((y / rect.height) - 0.5) * 12;
   event.currentTarget.style.setProperty("--glow-x", `${x}px`);
   event.currentTarget.style.setProperty("--glow-y", `${y}px`);
   event.currentTarget.style.setProperty("--tilt-x", `${tiltX.toFixed(2)}deg`);
@@ -104,6 +97,7 @@ export function LandingPage({ content }: LandingPageProps) {
   }, [pathname]);
 
   const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
+  const partners = content.partners.filter((p) => p.src.trim().length > 0);
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
   const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents);
   const gallerySections = buildGallerySections(gallery, sortedEvents);
@@ -606,7 +600,7 @@ export function LandingPage({ content }: LandingPageProps) {
       )}
 
       {/* ── Events ── */}
-      <MotionSection id="events" className={`py-28 px-6 lg:px-12 ${T.pageAlt}`}>
+      <MotionSection id="events" className={`pt-28 pb-12 md:pb-14 px-6 lg:px-12 ${T.pageAlt}`}>
         <div className="max-w-7xl mx-auto">
           <Reveal direction="left">
             <div className={`flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8 border-b ${T.border} pb-6`}>
@@ -658,10 +652,10 @@ export function LandingPage({ content }: LandingPageProps) {
 
       {/* ── Gallery ── */}
       {gallerySections.length > 0 && (
-        <MotionSection id="gallery" className={`py-24 px-6 lg:px-12 ${T.pageAlt}`}>
+        <MotionSection id="gallery" className={`pt-8 pb-24 md:pt-10 px-6 lg:px-12 ${T.pageAlt}`}>
           <div className="max-w-7xl mx-auto">
             <Reveal>
-              <div className="text-center mb-10">
+              <div className="text-center mb-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Gallery</p>
                 <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>Moments by event</h2>
               </div>
@@ -751,32 +745,37 @@ export function LandingPage({ content }: LandingPageProps) {
       )}
 
       {/* ── Partners Marquee ── */}
-      <section className={`py-16 border-y ${T.border} ${T.page} overflow-hidden`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-8">
-          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${T.textDim} text-center`}>Our Partners</p>
-        </div>
-        <div className="relative [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div className="flex gap-16 animate-marquee whitespace-nowrap">
-            {[...PARTNERS, ...PARTNERS].map((partner, i) => (
-              <div key={`${partner.name}-${i}`} className="h-14 w-44 shrink-0 flex items-center justify-center px-5 rounded-xl bg-transparent dark:bg-white/90 dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] transition-all">
-                <Image
-                  src={partner.src}
-                  alt={`${partner.name} logo`}
-                  width={160}
-                  height={48}
-                  className="max-h-9 w-auto object-contain opacity-70 hover:opacity-100 dark:opacity-90 dark:hover:opacity-100 transition-opacity"
-                />
-              </div>
-            ))}
+      {partners.length > 0 && (
+        <section className={`pt-10 pb-6 md:pt-12 md:pb-8 border-y ${T.border} ${T.page} overflow-hidden`}>
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-4">
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${T.textDim} text-center`}>Our Partners</p>
           </div>
-        </div>
-      </section>
+          <div className="partner-marquee-mask relative">
+            <div className="flex gap-12 md:gap-16 animate-marquee whitespace-nowrap">
+              {[...partners, ...partners].map((partner, i) => (
+                <div
+                  key={`${partner.id}-${i}`}
+                  className="h-20 md:h-24 w-52 md:w-64 shrink-0 flex items-center justify-center px-4 md:px-6 rounded-xl bg-transparent dark:bg-white/90 dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] transition-all"
+                >
+                  <Image
+                    src={partner.src}
+                    alt={`${partner.name} logo`}
+                    width={240}
+                    height={72}
+                    className="partner-marquee-logo max-h-14 md:max-h-[4.25rem] w-auto max-w-[min(220px,85vw)] md:max-w-[240px] object-contain opacity-100 dark:opacity-90 dark:hover:opacity-100 transition-opacity"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Team ── */}
-      <MotionSection id="team" className={`py-28 md:py-36 px-6 lg:px-12 ${T.page}`}>
+      <MotionSection id="team" className={`pt-12 pb-28 md:pt-16 md:pb-36 px-6 lg:px-12 ${T.page}`}>
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <div className="text-center mb-14">
+            <div className="text-center mb-10 md:mb-12">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-4">Executive Board</p>
               <h2 className={`text-4xl md:text-5xl font-black tracking-tight ${T.text}`}>Meet our leadership</h2>
             </div>
@@ -1144,8 +1143,8 @@ export function LandingPage({ content }: LandingPageProps) {
               transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_28px_90px_rgba(0,0,0,0.75)]">
-                <div className="grid md:grid-cols-[1.1fr_minmax(0,1fr)] h-full">
-                  <div className="relative min-h-[260px] md:min-h-[620px]">
+                <div className="grid md:grid-cols-[1.1fr_minmax(0,1fr)] h-full min-w-0">
+                  <div className="relative min-h-[260px] md:min-h-[620px] min-w-0">
                     {activeAlumniStory.member.image ? (
                       <Image
                         src={activeAlumniStory.member.image}
@@ -1182,16 +1181,20 @@ export function LandingPage({ content }: LandingPageProps) {
                     </button>
                   </div>
 
-                  <div className="relative overflow-y-auto bg-gradient-to-b from-black via-[#050505] to-[#0a0a0a] p-6 md:p-7">
-                    <div className="absolute -top-16 -right-10 h-44 w-44 rounded-full blur-3xl" style={{ background: `${activeAlumniStory.accent}30` }} />
-                    <div className="relative">
+                  <div className="relative min-w-0 overflow-x-hidden overflow-y-auto bg-gradient-to-b from-black via-[#050505] to-[#0a0a0a] p-6 md:p-7">
+                    <div
+                      className="pointer-events-none absolute -top-16 right-0 h-44 w-44 translate-x-1/4 rounded-full blur-3xl md:w-52"
+                      style={{ background: `${activeAlumniStory.accent}30` }}
+                      aria-hidden
+                    />
+                    <div className="relative min-w-0 max-w-full">
                       <div className="inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-red-300">
                         Story
                       </div>
-                      <p className="mt-5 text-[15px] leading-7 text-white/86 whitespace-pre-line">
+                      <p className="mt-5 text-[15px] leading-7 text-white/86 whitespace-pre-line break-words">
                         {activeAlumniStory.member.story?.trim() || "Story coming soon."}
                       </p>
-                      <div className="mt-7 pt-5 border-t border-white/10 flex flex-wrap items-center gap-3">
+                      <div className="mt-7 pt-5 border-t border-white/10 flex min-w-0 flex-wrap items-center gap-3">
                         {activeAlumniStory.member.linkedin && (
                           <a
                             href={activeAlumniStory.member.linkedin}

@@ -70,12 +70,20 @@ export type AlumniMember = {
   linkedin?: string;
 };
 
+/** Logo in the “Our Partners” marquee (wide / horizontal logos work best). */
+export type PartnerItem = {
+  id: string;
+  name: string;
+  src: string;
+};
+
 export type SiteContent = {
   links: SiteLinks;
   stats: StatItem[];
   impact: ImpactItem[];
   events: EventItem[];
   team: TeamMember[];
+  partners: PartnerItem[];
   gallery: GalleryImage[];
   alumni: AlumniMember[];
   testimonials: TestimonialItem[];
@@ -178,6 +186,28 @@ export const defaultSiteContent: SiteContent = {
       role: "Treasurer",
       bio: "Manages chapter finances and ensures resources are aligned with member impact.",
       linkedin: "https://www.linkedin.com/in/obianuju-enekebe/",
+    },
+  ],
+  partners: [
+    {
+      id: "partner-coreweave",
+      name: "CoreWeave",
+      src: "/uploads/Companies/coreweave%20logo.webp",
+    },
+    {
+      id: "partner-fiserv",
+      name: "Fiserv",
+      src: "/uploads/Companies/Fiserv_logo.svg.png",
+    },
+    {
+      id: "partner-jasfel",
+      name: "Jasfel Analytics",
+      src: "/uploads/Companies/jasfel-logo.png",
+    },
+    {
+      id: "partner-wellsfargo",
+      name: "Wells Fargo",
+      src: "/uploads/Companies/wells%20fargo.png",
     },
   ],
   gallery: [],

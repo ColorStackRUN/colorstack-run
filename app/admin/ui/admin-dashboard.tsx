@@ -107,7 +107,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
     window.location.href = "/admin/login";
   };
 
-  const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni") => {
+  const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni" | "partners") => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("scope", scope);
@@ -136,7 +136,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [dirty]);
 
   useEffect(() => {
-    const sectionIds = ["links", "events", "team", "gallery", "alumni", "testimonials"];
+    const sectionIds = ["links", "events", "team", "partners", "gallery", "alumni", "testimonials"];
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -171,6 +171,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             <AdminNavItem href="#admin-links" label="Chapter Links" active={activeSection === "links"} />
             <AdminNavItem href="#admin-events" label="Events" active={activeSection === "events"} />
             <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
+            <AdminNavItem href="#admin-partners" label="Partners" active={activeSection === "partners"} />
             <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
             <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
             <AdminNavItem href="#admin-testimonials" label="Testimonials" active={activeSection === "testimonials"} />
@@ -185,7 +186,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                 Content Management
               </p>
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900">ColorStackRUN Admin</h1>
-              <p className="text-slate-600 mt-1">Update events, team profiles, and gallery content from one place.</p>
+              <p className="text-slate-600 mt-1">Update events, team, partner logos, gallery, and more from one place.</p>
               {lastSavedAt && (
                 <p className="mt-2 text-sm text-emerald-700 font-medium">
                   Last saved at {lastSavedAt}
@@ -414,6 +415,79 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                   onUpload={async (file) => {
                     const url = await uploadImage(file, "team");
                     updateMember(content, member.id, { image: url }, update);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="admin-partners" className={sectionClass}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Partner logos (marquee)</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {
+                  'Logos scroll on the homepage "Our Partners" strip. Use wide PNG or WebP (transparent background works well). You can paste a URL or upload to storage.'
+                }
+              </p>
+            </div>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() =>
+                update({
+                  ...content,
+                  partners: [
+                    ...content.partners,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "New partner",
+                      src: "",
+                    },
+                  ],
+                })
+              }
+            >
+              Add partner
+            </button>
+          </div>
+          <div className="space-y-6">
+            {content.partners.length === 0 && (
+              <p className="text-sm text-gray-600">No partners yet — add one to show the moving strip on the site.</p>
+            )}
+            {content.partners.map((partner) => (
+              <div key={partner.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className={destructiveLinkClass}
+                    onClick={() =>
+                      update({ ...content, partners: content.partners.filter((p) => p.id !== partner.id) })
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <LabeledInput
+                    label="Partner name"
+                    value={partner.name}
+                    onChange={(value) => updatePartner(content, partner.id, { name: value }, update)}
+                  />
+                  <LabeledInput
+                    label="Logo image URL"
+                    value={partner.src}
+                    onChange={(value) => updatePartner(content, partner.id, { src: value }, update)}
+                    placeholder="https://… or /uploads/…"
+                  />
+                </div>
+                <ImageUploadField
+                  label="Upload logo (optional)"
+                  currentUrl={partner.src || undefined}
+                  onUpload={async (file) => {
+                    const url = await uploadImage(file, "partners");
+                    updatePartner(content, partner.id, { src: url }, update);
                   }}
                 />
               </div>
@@ -662,10 +736,12 @@ function LabeledInput({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="text-sm text-slate-700 space-y-1.5 block">
@@ -673,6 +749,7 @@ function LabeledInput({
       <input
         className="w-full rounded-xl border border-slate-300/80 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
@@ -1220,6 +1297,13 @@ function updateMember(content: SiteContent, id: string, patch: Partial<SiteConte
   update({
     ...content,
     team: content.team.map((member) => (member.id === id ? { ...member, ...patch } : member)),
+  });
+}
+
+function updatePartner(content: SiteContent, id: string, patch: Partial<SiteContent["partners"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    partners: content.partners.map((p) => (p.id === id ? { ...p, ...patch } : p)),
   });
 }
 

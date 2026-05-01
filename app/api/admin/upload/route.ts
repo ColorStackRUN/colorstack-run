@@ -9,7 +9,7 @@ import {
 
 export const runtime = "nodejs";
 
-const allowedScopes = new Set(["events", "team", "gallery", "alumni"]);
+const allowedScopes = new Set(["events", "team", "gallery", "alumni", "partners"]);
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Map<string, string>([
   ["image/jpeg", "jpg"],
