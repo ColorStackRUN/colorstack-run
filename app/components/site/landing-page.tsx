@@ -8,6 +8,7 @@ import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
 import { isSectionSlug, type SectionSlug } from "@/app/lib/site-sections";
 import { MotionSection, Reveal, AnimatedCounter } from "./motion";
+import { TeamCardPhysicsShell, TEAM_CARD_PHYSICS_MODE } from "./team-card-physics-shell";
 
 type LandingPageProps = { content: SiteContent };
 type ModalImageItem = { src: string; title: string };
@@ -793,13 +794,18 @@ export function LandingPage({ content }: LandingPageProps) {
                     style={{ perspective: "1200px", aspectRatio: "3/4" }}
                     onClick={() => setFlippedCard(isFlipped ? null : member.id)}
                   >
-                    <motion.div
-                      className="relative w-full h-full cursor-pointer"
-                      style={{ transformStyle: "preserve-3d" }}
-                      animate={{ rotateY: isFlipped ? 180 : 0 }}
-                      whileHover={!isFlipped ? { y: -8, scale: 1.015 } : undefined}
-                      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                    <TeamCardPhysicsShell
+                      mode={TEAM_CARD_PHYSICS_MODE}
+                      disabled={!!reduceMotion}
+                      freeze={isFlipped}
+                      className="relative h-full w-full"
                     >
+                      <motion.div
+                        className="relative h-full w-full cursor-pointer"
+                        style={{ transformStyle: "preserve-3d" }}
+                        animate={{ rotateY: isFlipped ? 180 : 0 }}
+                        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                      >
 
                       {/* ── FRONT FACE ── */}
                       <div
@@ -905,7 +911,8 @@ export function LandingPage({ content }: LandingPageProps) {
                         </div>
                       </div>
 
-                    </motion.div>
+                      </motion.div>
+                    </TeamCardPhysicsShell>
                   </div>
                 </Reveal>
               );
