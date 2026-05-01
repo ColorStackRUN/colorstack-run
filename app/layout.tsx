@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { HOME_DESCRIPTION, HOME_TITLE, SITE_KEYWORDS } from "@/app/lib/site-metadata";
 import { getSiteOrigin } from "@/app/lib/site-url";
 import "./globals.css";
 
@@ -22,8 +23,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  title: "ColorStackRUN | Rutgers University-Newark",
-  description: "ColorStackRUN is the Rutgers University-Newark chapter of ColorStack.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  keywords: [...SITE_KEYWORDS],
   robots: {
     index: true,
     follow: true,
@@ -41,8 +43,8 @@ export const metadata: Metadata = {
     type: "website",
     url: `${siteUrl}/`,
     siteName: "ColorStackRUN",
-    title: "ColorStackRUN | Rutgers University-Newark",
-    description: "ColorStackRUN is the Rutgers University-Newark chapter of ColorStack.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: [
       {
         url: "/colorstack_run_logo_red_4.png",
@@ -54,25 +56,38 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ColorStackRUN | Rutgers University-Newark",
-    description: "ColorStackRUN is the Rutgers University-Newark chapter of ColorStack.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: ["/colorstack_run_logo_red_4.png"],
   },
 };
 
-const organizationJsonLd = {
+const structuredDataJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "ColorStackRUN",
-  description:
-    "ColorStackRUN is the Rutgers University-Newark chapter of ColorStack.",
-  url: siteUrl,
-  logo: `${siteUrl}/colorstack_run_logo_red_4.png`,
-  parentOrganization: {
-    "@type": "Organization",
-    name: "ColorStack",
-    url: "https://www.colorstack.org",
-  },
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "ColorStackRUN",
+      description: HOME_DESCRIPTION,
+      url: siteUrl,
+      logo: `${siteUrl}/colorstack_run_logo_red_4.png`,
+      parentOrganization: {
+        "@type": "Organization",
+        name: "ColorStack",
+        url: "https://www.colorstack.org",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "ColorStackRUN",
+      description: HOME_DESCRIPTION,
+      inLanguage: "en-US",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -89,7 +104,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationJsonLd),
+            __html: JSON.stringify(structuredDataJsonLd),
           }}
         />
         {children}

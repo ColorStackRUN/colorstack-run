@@ -1,9 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { type ComponentProps, type MouseEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
+import { isSectionSlug, type SectionSlug } from "@/app/lib/site-sections";
 import { MotionSection, Reveal, AnimatedCounter } from "./motion";
 
 type LandingPageProps = { content: SiteContent };
@@ -93,6 +96,12 @@ export function LandingPage({ content }: LandingPageProps) {
   const [isDark, setIsDark]     = useState(false);
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
+  const pathname = usePathname();
+  const sectionFromPath = useMemo((): SectionSlug | null => {
+    const seg = pathname.replace(/^\//, "");
+    if (!seg) return null;
+    return isSectionSlug(seg) ? seg : null;
+  }, [pathname]);
 
   const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
@@ -102,15 +111,38 @@ export function LandingPage({ content }: LandingPageProps) {
   const [activeGalleryTab, setActiveGalleryTab] = useState(0);
   const activeEvents = eventsView === "upcoming" ? upcomingEvents : pastEvents;
   const navLinks = useMemo(
-    () => ([
-      { href: "#about", label: "About" },
-      { href: "#events", label: "Events" },
-      ...(gallery.length > 0 ? [{ href: "#gallery", label: "Gallery" }] : []),
-      { href: "#team", label: "Team" },
-      ...(alumni.length > 0 ? [{ href: "#alumni", label: "Alumni" }] : []),
-    ]),
+    () => {
+      const items: { id: SectionSlug; href: string; label: string }[] = [
+        { id: "about", href: "/about", label: "About" },
+        { id: "events", href: "/events", label: "Events" },
+      ];
+      if (gallery.length > 0) items.push({ id: "gallery", href: "/gallery", label: "Gallery" });
+      items.push({ id: "team", href: "/team", label: "Team" });
+      if (alumni.length > 0) items.push({ id: "alumni", href: "/alumni", label: "Alumni" });
+      return items;
+    },
     [gallery.length, alumni.length]
   );
+
+  useEffect(() => {
+    if (!sectionFromPath) return;
+    setActiveSection(sectionFromPath);
+  }, [sectionFromPath]);
+
+  useEffect(() => {
+    if (!sectionFromPath) return;
+    const run = () => {
+      const el = document.getElementById(sectionFromPath);
+      if (!el) return;
+      const offset = 80;
+      const y = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: Math.max(0, y), behavior: reduceMotion ? "auto" : "smooth" });
+    };
+    const raf = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(run);
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [sectionFromPath, reduceMotion]);
 
   // Initialise from localStorage / system pref after mount (avoids hydration mismatch)
   useEffect(() => {
@@ -134,13 +166,13 @@ export function LandingPage({ content }: LandingPageProps) {
       setScrollY(y);
       setShowBackToTop(y > 420);
 
-      const sectionIds = navLinks.map((item) => item.href.slice(1));
+      const sectionIds = navLinks.map((item) => item.id);
       const marker = y + window.innerHeight * 0.35;
       let current = sectionIds[0] ?? "about";
       for (const id of sectionIds) {
-        const section = document.getElementById(id);
-        if (!section) continue;
-        if (marker >= section.offsetTop - 80) current = id;
+        const sectionEl = document.getElementById(id);
+        if (!sectionEl) continue;
+        if (marker >= sectionEl.offsetTop - 80) current = id;
       }
       if (window.innerHeight + y >= document.body.scrollHeight - 20) {
         current = sectionIds[sectionIds.length - 1] ?? current;
@@ -188,7 +220,7 @@ export function LandingPage({ content }: LandingPageProps) {
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-between h-20">
-            <a href="#" className="flex items-center gap-3 group">
+            <Link href="/" className="flex items-center gap-3 group">
               <Image
                 src="/colorstack_run_logo_red_4.png"
                 alt="ColorStack Rutgers Newark logo"
@@ -200,21 +232,21 @@ export function LandingPage({ content }: LandingPageProps) {
               <span className={`font-semibold text-lg tracking-tight ${T.text}`}>
                 ColorStack<span className="text-red-500">RUN</span>
               </span>
-            </a>
+            </Link>
 
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ href, label }) => (
-                <a
-                  key={href}
+              {navLinks.map(({ id, href, label }) => (
+                <Link
+                  key={id}
                   href={href}
                   className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === href.slice(1)
+                    activeSection === id
                       ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
                       : `${T.textMuted} hover:${T.text} hover:bg-black/[0.04] dark:hover:bg-white/[0.05]`
                   }`}
                 >
                   {label}
-                </a>
+                </Link>
               ))}
 
               {/* Theme toggle */}
@@ -263,19 +295,19 @@ export function LandingPage({ content }: LandingPageProps) {
         {mobileMenuOpen && (
           <div className={`md:hidden border-t ${T.border} ${T.mobileMenu}`}>
             <div className="px-6 py-5 space-y-1">
-              {navLinks.map(({ href, label }) => (
-                <a
-                  key={href}
+              {navLinks.map(({ id, href, label }) => (
+                <Link
+                  key={id}
                   href={href}
                   className={`block px-3 py-2.5 text-sm rounded-lg transition-all ${
-                    activeSection === href.slice(1)
+                    activeSection === id
                       ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
                       : `${T.textMuted} hover:bg-black/[0.04] dark:hover:bg-white/[0.05]`
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {label}
-                </a>
+                </Link>
               ))}
               <div className="pt-3">
                 <a
@@ -350,7 +382,7 @@ export function LandingPage({ content }: LandingPageProps) {
 
                 {/* Description */}
                 <p className={`text-lg md:text-xl ${T.textMuted} leading-relaxed max-w-lg`}>
-                  The official ColorStack chapter building a stronger pathway for Black and Latinx students in tech through mentorship, career development, and community.
+                  ColorStack at Rutgers University–Newark: ColorStackRUN is the official Rutgers Newark ColorStack chapter, building a stronger pathway for Black and Latinx students in tech through mentorship, career development, and community.
                 </p>
 
                 {/* CTAs */}
@@ -365,13 +397,13 @@ export function LandingPage({ content }: LandingPageProps) {
                     Join the Community
                     <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                   </a>
-                  <a
-                    href="#events"
+                  <Link
+                    href="/events"
                     className={`cursor-glow inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.14)]`}
                     onMouseMove={handleCursorGlowMove}
                   >
                     Explore Events <span>↓</span>
-                  </a>
+                  </Link>
                 </div>
 
                 {/* Social links */}
@@ -420,8 +452,8 @@ export function LandingPage({ content }: LandingPageProps) {
                   <br />A <span className="text-red-500">community.</span>
                 </h2>
                 <p className={`${T.textMuted} text-lg leading-relaxed`}>
-                  We are the Rutgers University–Newark chapter of ColorStack, a national nonprofit
-                  dedicated to increasing the number of Black and Latinx computer science graduates.
+                  We are the ColorStack Rutgers Newark chapter — ColorStack at Rutgers University–Newark and the Rutgers Newark ColorStack
+                  community on campus. As the local arm of the national nonprofit, we are dedicated to increasing the number of Black and Latinx computer science graduates.
                 </p>
                 <p className={`${T.textMuted} leading-relaxed`}>
                   Through mentorship, professional development, and real-world opportunities, we empower
@@ -1039,11 +1071,16 @@ export function LandingPage({ content }: LandingPageProps) {
             <div>
               <h3 className="text-white text-xs font-semibold mb-4 uppercase tracking-widest">Quick Links</h3>
               <ul className="space-y-2.5 text-sm">
-                <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#events" className="hover:text-white transition-colors">Events</a></li>
-                <li><a href="#team" className="hover:text-white transition-colors">Team</a></li>
-                {alumni.length > 0 && <li><a href="#alumni" className="hover:text-white transition-colors">Alumni</a></li>}
-                {gallery.length > 0 && <li><a href="#gallery" className="hover:text-white transition-colors">Gallery</a></li>}
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/events" className="hover:text-white transition-colors">Events</Link></li>
+                <li><Link href="/team" className="hover:text-white transition-colors">Team</Link></li>
+                {alumni.length > 0 && (
+                  <li><Link href="/alumni" className="hover:text-white transition-colors">Alumni</Link></li>
+                )}
+                {gallery.length > 0 && (
+                  <li><Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link></li>
+                )}
+                <li><Link href="/join" className="hover:text-white transition-colors">Get involved</Link></li>
               </ul>
             </div>
             <div>
