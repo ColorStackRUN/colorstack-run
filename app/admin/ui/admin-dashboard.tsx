@@ -1,8 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
+import { ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY } from "@/app/lib/admin-changelog-author-storage";
 import type { SiteContent } from "@/app/lib/content-types";
+import { buildSiteContentChangeSummary } from "@/app/lib/site-content-change-summary";
+import { AdminAuthorSelect } from "./admin-author-select";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
@@ -43,6 +47,11 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   const [extraGalleryGroups, setExtraGalleryGroups] = useState<string[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveHistory, setSaveHistory] = useState<string[]>([]);
+  const [publishedBaseline, setPublishedBaseline] = useState<SiteContent>(() => structuredClone(initialContent));
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishLogDraft, setPublishLogDraft] = useState("");
+  const [publishAuthorName, setPublishAuthorName] = useState("");
+  const [publishModalError, setPublishModalError] = useState<string | null>(null);
 
   const hasGallery = useMemo(() => content.gallery.length > 0, [content.gallery.length]);
   const hasAlumni = useMemo(() => content.alumni.length > 0, [content.alumni.length]);
@@ -83,23 +92,92 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
     window.setTimeout(() => setToast(null), 2800);
   };
 
-  const onSave = async () => {
-    setSaving(true);
-    const response = await fetch("/api/admin/content", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(content),
-    });
-    setSaving(false);
-    if (!response.ok) {
-      showToast("error", "Failed to save changes.");
+  const openPublishModal = () => {
+    if (!dirty) {
+      showToast("error", "Nothing to save yet.");
       return;
     }
-    setDirty(false);
-    const savedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-    setLastSavedAt(savedAt);
-    setSaveHistory((prev) => [savedAt, ...prev].slice(0, 4));
-    showToast("success", "Changes saved and published.");
+    setPublishModalError(null);
+    setPublishLogDraft(buildSiteContentChangeSummary(publishedBaseline, content));
+    try {
+      const saved = localStorage.getItem(ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY);
+      const names = new Set(content.team.map((m) => m.name));
+      setPublishAuthorName(saved && names.has(saved) ? saved : "");
+    } catch {
+      setPublishAuthorName("");
+    }
+    setPublishModalOpen(true);
+  };
+
+  const closePublishModal = () => {
+    if (saving) return;
+    setPublishModalOpen(false);
+    setPublishModalError(null);
+  };
+
+  const confirmPublish = async () => {
+    const author = publishAuthorName.trim();
+    const message = publishLogDraft.trim();
+    if (content.team.length === 0) {
+      setPublishModalError("Add at least one person in the Executive Board section of the CMS before publishing.");
+      return;
+    }
+    if (!author) {
+      setPublishModalError("Select who is making this change from the list.");
+      return;
+    }
+    if (!message) {
+      setPublishModalError("Add what changed (the summary below can be edited).");
+      return;
+    }
+    setPublishModalError(null);
+    setSaving(true);
+    try {
+      const response = await fetch("/api/admin/content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(content),
+      });
+      if (!response.ok) {
+        showToast("error", "Failed to save changes.");
+        return;
+      }
+      setPublishedBaseline(structuredClone(content));
+      setDirty(false);
+      const savedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      setLastSavedAt(savedAt);
+      setSaveHistory((prev) => [savedAt, ...prev].slice(0, 4));
+
+      try {
+        localStorage.setItem(ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY, author);
+      } catch {
+        /* ignore */
+      }
+
+      const logRes = await fetch("/api/admin/changelog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, authorName: author }),
+      });
+      setPublishModalOpen(false);
+      if (!logRes.ok) {
+        let err = "Unknown error";
+        try {
+          const b = (await logRes.json()) as { error?: string };
+          if (b.error) err = b.error;
+        } catch {
+          /* ignore */
+        }
+        showToast(
+          "error",
+          `Your changes are live, but the activity log could not be saved (${err}). Try Save & publish again, or check your database / network.`
+        );
+        return;
+      }
+      showToast("success", "Changes saved, published, and logged.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onLogout = async () => {
@@ -134,6 +212,17 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
+
+  useEffect(() => {
+    if (!publishModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || saving) return;
+      setPublishModalOpen(false);
+      setPublishModalError(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [publishModalOpen, saving]);
 
   useEffect(() => {
     const sectionIds = ["links", "events", "team", "partners", "gallery", "alumni", "testimonials"];
@@ -175,6 +264,15 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
             <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
             <AdminNavItem href="#admin-testimonials" label="Testimonials" active={activeSection === "testimonials"} />
+            <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-[0.14em] font-semibold text-slate-500 border-t border-slate-100 mt-2">
+              Tools
+            </p>
+            <a
+              href="/admin/changelog"
+              className="block px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-700 hover:bg-slate-50 border border-transparent"
+            >
+              Change log
+            </a>
           </nav>
         </aside>
 
@@ -187,6 +285,14 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
               </p>
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900">ColorStackRUN Admin</h1>
               <p className="text-slate-600 mt-1">Update events, team, partner logos, gallery, and more from one place.</p>
+              <p className="mt-2">
+                <Link
+                  href="/admin/changelog"
+                  className="text-sm font-medium text-red-700 hover:text-red-800 hover:underline underline-offset-2"
+                >
+                  Open change log →
+                </Link>
+              </p>
               {lastSavedAt && (
                 <p className="mt-2 text-sm text-emerald-700 font-medium">
                   Last saved at {lastSavedAt}
@@ -200,7 +306,11 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             </div>
             <div className="flex gap-3">
               <button className={buttonClass} onClick={onLogout}>Log out</button>
-              <button className={primaryButtonClass} onClick={onSave} disabled={saving}>
+              <button
+                className={primaryButtonClass}
+                onClick={openPublishModal}
+                disabled={saving || publishModalOpen}
+              >
                 {saving ? "Saving..." : "Save & Publish"}
               </button>
             </div>
@@ -695,6 +805,75 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
 
         </div>
       </div>
+
+      {publishModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="publish-modal-title"
+          onClick={closePublishModal}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-white/80 bg-white shadow-2xl shadow-slate-900/15 p-6 md:p-7 space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="publish-modal-title" className="text-xl font-bold text-slate-900">
+              Save & publish
+            </h2>
+            <p className="text-sm text-slate-600">
+              We pre-filled a summary of edits since your last successful publish. Add your name, review the summary,
+              then confirm.
+            </p>
+            <div className="rounded-xl border border-amber-300/80 bg-amber-100 px-3 py-2.5 text-sm leading-relaxed text-slate-900">
+              <strong className="font-semibold text-slate-950">Please describe exactly what you changed</strong>{" "}
+              (edit the summary below if the auto-generated list is incomplete). This creates a clear record for the
+              team.
+            </div>
+            {content.team.length === 0 && (
+              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                Add at least one person under <strong className="font-semibold">Executive Board</strong> in the CMS
+                so you can choose who is making this change.
+              </p>
+            )}
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">Who is making this change</span>
+              <AdminAuthorSelect
+                team={content.team}
+                value={publishAuthorName}
+                onChange={setPublishAuthorName}
+                className="w-full rounded-xl border border-slate-300/80 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">What changed (activity log)</span>
+              <textarea
+                value={publishLogDraft}
+                onChange={(e) => setPublishLogDraft(e.target.value)}
+                rows={10}
+                className="w-full rounded-xl border border-slate-300/80 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 font-mono leading-relaxed"
+              />
+            </label>
+            {publishModalError && (
+              <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{publishModalError}</p>
+            )}
+            <div className="flex flex-wrap justify-end gap-3 pt-1">
+              <button type="button" className={buttonClass} onClick={closePublishModal} disabled={saving}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={primaryButtonClass}
+                onClick={confirmPublish}
+                disabled={saving || content.team.length === 0}
+              >
+                {saving ? "Publishing…" : "Confirm publish"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast toast={toast} />
     </main>
   );
