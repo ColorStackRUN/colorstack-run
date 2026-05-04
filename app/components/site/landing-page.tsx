@@ -22,6 +22,7 @@ type ActiveAlumniStoryState = {
   member: SiteContent["alumni"][number];
   accent: string;
 };
+type ActiveTeamMemberState = SiteContent["team"][number];
 
 const ALUMNI_COLORS = [
   "#dc2626", "#9333ea", "#ea580c", "#16a34a", "#ca8a04", "#0891b2",
@@ -87,6 +88,7 @@ export function LandingPage({ content }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFlyer, setActiveFlyer] = useState<ActiveFlyerState | null>(null);
   const [activeAlumniStory, setActiveAlumniStory] = useState<ActiveAlumniStoryState | null>(null);
+  const [activeTeamMember, setActiveTeamMember] = useState<ActiveTeamMemberState | null>(null);
   const [isDark, setIsDark]     = useState(false);
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
@@ -184,7 +186,8 @@ export function LandingPage({ content }: LandingPageProps) {
       if (e.key === "Escape") {
         if (activeFlyer) setActiveFlyer(null);
         if (activeAlumniStory) setActiveAlumniStory(null);
-        if (activeFlyer || activeAlumniStory) return;
+        if (activeTeamMember) setActiveTeamMember(null);
+        if (activeFlyer || activeAlumniStory || activeTeamMember) return;
       }
       if (!activeFlyer) return;
       if (!activeFlyer.galleryItems || activeFlyer.galleryItems.length <= 1) return;
@@ -198,7 +201,7 @@ export function LandingPage({ content }: LandingPageProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeFlyer, activeAlumniStory]);
+  }, [activeFlyer, activeAlumniStory, activeTeamMember]);
 
   const scrolled = scrollY > 60;
 
@@ -792,7 +795,14 @@ export function LandingPage({ content }: LandingPageProps) {
                   <div
                     className="group relative select-none aspect-[10/16] md:aspect-[3/4]"
                     style={{ perspective: "1200px" }}
-                    onClick={() => setFlippedCard(isFlipped ? null : member.id)}
+                    onClick={() => {
+                      if (window.matchMedia("(max-width: 767px)").matches) {
+                        setFlippedCard(null);
+                        setActiveTeamMember(member);
+                        return;
+                      }
+                      setFlippedCard(isFlipped ? null : member.id);
+                    }}
                   >
                     <TeamCardPhysicsShell
                       mode={TEAM_CARD_PHYSICS_MODE}
@@ -1236,6 +1246,90 @@ export function LandingPage({ content }: LandingPageProps) {
                         </button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeTeamMember && (
+          <motion.div
+            className="fixed inset-0 z-[71] bg-black/80 backdrop-blur-sm"
+            onClick={() => setActiveTeamMember(null)}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+          >
+            <motion.div
+              className="absolute inset-0 flex items-end md:items-center justify-center p-0 md:p-6"
+              onClick={(e) => e.stopPropagation()}
+              initial={reduceMotion ? false : { y: 22, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 12, opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="relative w-full max-w-2xl h-[88vh] md:h-[78vh] overflow-hidden rounded-t-3xl md:rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-900 to-black shadow-[0_28px_90px_rgba(0,0,0,0.75)]">
+                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-600 to-red-500" />
+                <button
+                  type="button"
+                  onClick={() => setActiveTeamMember(null)}
+                  className="absolute right-4 top-4 z-10 h-9 w-9 rounded-full bg-black/45 hover:bg-black/70 text-white text-lg flex items-center justify-center transition-colors"
+                  aria-label="Close team member details"
+                >
+                  ×
+                </button>
+                <div className="h-full overflow-y-auto p-6 pt-8">
+                  <div className="flex items-center gap-3 mb-6 pr-10">
+                    {activeTeamMember.image ? (
+                      <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0">
+                        <Image src={activeTeamMember.image} alt={activeTeamMember.name} fill className="object-cover" sizes="56px" />
+                      </div>
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0">
+                        <span className="text-red-400 text-base font-bold">
+                          {activeTeamMember.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-red-400 text-[11px] font-bold uppercase tracking-[0.18em] leading-tight">
+                        {activeTeamMember.role}
+                      </p>
+                      <h3 className="text-white font-bold text-3xl leading-tight">{activeTeamMember.name}</h3>
+                    </div>
+                  </div>
+
+                  {activeTeamMember.graduationYear && (
+                    <div className="mb-5">
+                      <span className="inline-flex px-3 py-1 rounded-full bg-black/45 text-white/80 text-xs font-semibold border border-white/20">
+                        Class of {activeTeamMember.graduationYear}
+                      </span>
+                    </div>
+                  )}
+
+                  <p className="text-white/85 text-[17px] leading-8 whitespace-pre-line">
+                    {activeTeamMember.bio}
+                  </p>
+
+                  <div className="flex gap-3 mt-8 pb-2">
+                    <a
+                      href={activeTeamMember.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-sm font-semibold transition-all"
+                    >
+                      <LinkedInIcon /> LinkedIn
+                    </a>
+                    <a
+                      href={`mailto:${activeTeamMember.email ?? links.email}`}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-sm font-semibold transition-all"
+                    >
+                      <MailIcon /> Email
+                    </a>
                   </div>
                 </div>
               </div>
