@@ -16,7 +16,7 @@ Code and infrastructure work is separate; see **Contributing and Git workflow** 
 
 Treat `main` as **production-oriented**: it should always reflect what you are willing to ship.
 
-- **Contributors** (members, collaborators, or anyone without maintainer responsibility): do **not** push directly to `main`. Create a **branch** from the latest `main` (for example `feature/short-description` or `fix/issue-name`), push your branch, and open a **Pull Request**.
+- **Contributors** (members, collaborators, or anyone without maintainer responsibility): do **not** push directly to `main` unless a maintainer explicitly asks to bypass protections for a one-off. Create a **branch** from the latest `main` using clear prefixes: `feature/<short-description>`, `fix/<short-description>`, or `chore/<short-description>` (docs, tooling, config). Push your branch and open a **Pull Request**.
 - **Pull requests** should explain what changed and why. Link tracking issues or tasks when your team uses them.
 - **Merges:** only **repository maintainers** (chapter tech lead / owners listed on GitHub) approve and merge pull requests.
 
