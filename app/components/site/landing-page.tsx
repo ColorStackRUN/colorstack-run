@@ -790,8 +790,8 @@ export function LandingPage({ content }: LandingPageProps) {
                 <Reveal key={member.id}>
                   {/* Perspective wrapper — sets up 3D space */}
                   <div
-                    className="group relative select-none"
-                    style={{ perspective: "1200px", aspectRatio: "3/4" }}
+                    className="group relative select-none aspect-[10/16] md:aspect-[3/4]"
+                    style={{ perspective: "1200px" }}
                     onClick={() => setFlippedCard(isFlipped ? null : member.id)}
                   >
                     <TeamCardPhysicsShell
@@ -878,7 +878,7 @@ export function LandingPage({ content }: LandingPageProps) {
 
                         <div className="flex flex-col h-full p-5 pt-6">
                           {/* Avatar + name */}
-                          <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2.5 md:gap-3 mb-3 md:mb-4">
                             {member.image ? (
                               <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0">
                                 <Image src={member.image} alt={member.name} fill className="object-cover" sizes="48px" />
@@ -889,16 +889,16 @@ export function LandingPage({ content }: LandingPageProps) {
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-red-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.16em] leading-tight break-words">
+                              <p className="text-red-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.16em] leading-tight break-words">
                                 {member.role}
                               </p>
-                              <h3 className="text-white font-bold text-base leading-tight">{member.name}</h3>
+                              <h3 className="text-white font-bold text-[15px] md:text-base leading-tight">{member.name}</h3>
                             </div>
                           </div>
 
                           {/* Bio */}
                           <div className="flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                            <p className="text-white/78 text-sm leading-relaxed">{member.bio}</p>
+                            <p className="text-white/78 text-[13px] md:text-sm leading-relaxed">{member.bio}</p>
                           </div>
 
                           {/* Social buttons */}
