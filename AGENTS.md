@@ -13,7 +13,7 @@ This repository lives under a **GitHub organization** with a **protected `main`*
 
 When implementing work or suggesting git operations:
 
-1. Create a branch from the latest `main` (e.g. `feature/…`, `fix/…`, `docs/…`).
+1. Create a branch from the latest `main` (e.g. `feature/…`, `fix/…`, `chore/…`).
 2. Commit on that branch.
 3. Push the branch to `origin`.
 4. Open a **pull request** into `main` instead of merging locally on `main`.
