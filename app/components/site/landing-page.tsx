@@ -839,13 +839,17 @@ export function LandingPage({ content }: LandingPageProps) {
                         )}
 
                         {/* Gradient overlays */}
-                        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 to-transparent" />
-                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+                        <div className="absolute inset-x-0 top-0 h-24 md:h-40 bg-gradient-to-b from-black/65 md:from-black/80 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 h-[58%] md:h-1/2 bg-gradient-to-t from-black/92 to-transparent" />
 
                         {/* Role + Name at top */}
-                        <div className="absolute top-4 left-4 right-4 pr-20">
-                          <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mb-1">{member.role}</p>
-                          <h3 className="text-white font-bold text-xl leading-tight">{member.name}</h3>
+                        <div className="absolute left-4 right-4 bottom-4 md:bottom-auto md:top-4 md:right-4 md:pr-20">
+                          <p className="text-red-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.12em] md:tracking-widest mb-1 truncate">
+                            {member.role}
+                          </p>
+                          <h3 className="text-white font-bold text-lg md:text-xl leading-tight line-clamp-2 md:line-clamp-none">
+                            {member.name}
+                          </h3>
                         </div>
 
                         {/* Graduation year tag — top right */}
