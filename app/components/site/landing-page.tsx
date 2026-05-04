@@ -833,14 +833,17 @@ export function LandingPage({ content }: LandingPageProps) {
                         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
 
                         {/* Role + Name at top */}
-                        <div className="absolute top-4 left-4 right-4">
+                        <div className="absolute top-4 left-4 right-4 pr-20">
                           <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest mb-1">{member.role}</p>
                           <h3 className="text-white font-bold text-xl leading-tight">{member.name}</h3>
                         </div>
 
                         {/* Graduation year tag — top right */}
                         {member.graduationYear && (
-                          <div className="absolute top-4 right-4">
+                          <div
+                            className={`absolute top-4 right-4 transition-opacity duration-150 ${isFlipped ? "opacity-0" : "opacity-100"}`}
+                            style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+                          >
                             <span className="inline-flex px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white/80 text-[10px] font-semibold border border-white/20">
                               Class of {member.graduationYear}
                             </span>
@@ -848,7 +851,14 @@ export function LandingPage({ content }: LandingPageProps) {
                         )}
 
                         {/* "View Bio" hint — slides up on group hover */}
-                        <div className="absolute bottom-5 inset-x-0 flex justify-center translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                        <div
+                          className={`absolute bottom-5 inset-x-0 flex justify-center pointer-events-none transition-all duration-150 ${
+                            isFlipped
+                              ? "translate-y-3 opacity-0"
+                              : "translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"
+                          }`}
+                          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+                        >
                           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/55 backdrop-blur-sm rounded-full text-white text-xs font-medium border border-white/20">
                             <FlipIcon /> View Bio
                           </span>
@@ -868,7 +878,7 @@ export function LandingPage({ content }: LandingPageProps) {
 
                         <div className="flex flex-col h-full p-5 pt-6">
                           {/* Avatar + name */}
-                          <div className="flex items-center gap-3 mb-5">
+                          <div className="flex items-center gap-3 mb-4">
                             {member.image ? (
                               <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0">
                                 <Image src={member.image} alt={member.name} fill className="object-cover" sizes="48px" />
@@ -879,16 +889,20 @@ export function LandingPage({ content }: LandingPageProps) {
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest truncate">{member.role}</p>
+                              <p className="text-red-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.16em] leading-tight break-words">
+                                {member.role}
+                              </p>
                               <h3 className="text-white font-bold text-base leading-tight">{member.name}</h3>
                             </div>
                           </div>
 
                           {/* Bio */}
-                          <p className="text-white/78 text-sm leading-relaxed flex-1">{member.bio}</p>
+                          <div className="flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <p className="text-white/78 text-sm leading-relaxed">{member.bio}</p>
+                          </div>
 
                           {/* Social buttons */}
-                          <div className="flex gap-2 mt-5">
+                          <div className="flex gap-2 mt-3">
                             <a
                               href={member.linkedin}
                               target="_blank"
@@ -907,7 +921,7 @@ export function LandingPage({ content }: LandingPageProps) {
                             </a>
                           </div>
 
-                          <p className="text-white/40 text-[10px] text-center mt-3">Click to close</p>
+                          <p className="text-white/40 text-[10px] text-center mt-2">Click to close</p>
                         </div>
                       </div>
 
