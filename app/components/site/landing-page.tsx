@@ -1265,14 +1265,14 @@ export function LandingPage({ content }: LandingPageProps) {
             transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
           >
             <motion.div
-              className="absolute inset-0 flex items-end md:items-center justify-center p-0 md:p-6"
+              className="absolute inset-0 flex items-center justify-center p-4 md:p-6"
               onClick={(e) => e.stopPropagation()}
               initial={reduceMotion ? false : { y: 22, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 12, opacity: 0 }}
               transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="relative w-full max-w-2xl h-[88vh] md:h-[78vh] overflow-hidden rounded-t-3xl md:rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-900 to-black shadow-[0_28px_90px_rgba(0,0,0,0.75)]">
+              <div className="relative w-full max-w-2xl max-h-[88vh] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-900 to-black shadow-[0_28px_90px_rgba(0,0,0,0.75)]">
                 <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-600 to-red-500" />
                 <button
                   type="button"
@@ -1282,7 +1282,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 >
                   ×
                 </button>
-                <div className="h-full overflow-y-auto p-6 pt-8">
+                <div className="overflow-y-auto p-6 pt-8 max-h-[88vh]">
                   <div className="flex items-center gap-3 mb-6 pr-10">
                     {activeTeamMember.image ? (
                       <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0">
