@@ -237,6 +237,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 <Link
                   key={id}
                   href={href}
+                  scroll={false}
                   className={`px-4 py-2 text-sm rounded-lg transition-all ${
                     activeSection === id
                       ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
@@ -297,6 +298,7 @@ export function LandingPage({ content }: LandingPageProps) {
                 <Link
                   key={id}
                   href={href}
+                  scroll={false}
                   className={`block px-3 py-2.5 text-sm rounded-lg transition-all ${
                     activeSection === id
                       ? "text-red-600 dark:text-red-400 bg-red-500/[0.08] border border-red-500/20"
@@ -397,6 +399,7 @@ export function LandingPage({ content }: LandingPageProps) {
                   </a>
                   <Link
                     href="/events"
+                    scroll={false}
                     className={`cursor-glow inline-flex items-center gap-2 px-7 py-3.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border ${T.border2} ${T.text} font-semibold rounded-full transition-all hover:shadow-[0_0_24px_rgba(239,68,68,0.14)]`}
                     onMouseMove={handleCursorGlowMove}
                   >
@@ -1105,16 +1108,16 @@ export function LandingPage({ content }: LandingPageProps) {
             <div>
               <h3 className="text-white text-xs font-semibold mb-4 uppercase tracking-widest">Quick Links</h3>
               <ul className="space-y-2.5 text-sm">
-                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-                <li><Link href="/events" className="hover:text-white transition-colors">Events</Link></li>
-                <li><Link href="/team" className="hover:text-white transition-colors">Team</Link></li>
+                <li><Link href="/about" scroll={false} className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/events" scroll={false} className="hover:text-white transition-colors">Events</Link></li>
+                <li><Link href="/team" scroll={false} className="hover:text-white transition-colors">Team</Link></li>
                 {alumni.length > 0 && (
-                  <li><Link href="/alumni" className="hover:text-white transition-colors">Alumni</Link></li>
+                  <li><Link href="/alumni" scroll={false} className="hover:text-white transition-colors">Alumni</Link></li>
                 )}
                 {gallery.length > 0 && (
-                  <li><Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link></li>
+                  <li><Link href="/gallery" scroll={false} className="hover:text-white transition-colors">Gallery</Link></li>
                 )}
-                <li><Link href="/join" className="hover:text-white transition-colors">Get involved</Link></li>
+                <li><Link href="/join" scroll={false} className="hover:text-white transition-colors">Get involved</Link></li>
               </ul>
             </div>
             <div>
