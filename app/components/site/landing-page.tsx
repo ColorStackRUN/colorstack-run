@@ -408,12 +408,34 @@ export function LandingPage({ content }: LandingPageProps) {
                 </div>
 
                 {/* Social links */}
-                <div className={`flex items-center gap-5 text-sm ${T.textDim}`}>
-                  <a href={links.instagram} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>Instagram</a>
-                  <span>·</span>
-                  <a href={links.linkedin} target="_blank" rel="noopener noreferrer" className={`hover:${T.text} transition-colors`}>LinkedIn</a>
-                  <span>·</span>
-                  <a href={`mailto:${links.email}`} className={`hover:${T.text} transition-colors`}>Email Us</a>
+                <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-sm ${T.textDim}`}>
+                  <a
+                    href={links.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1.5 hover:${T.text} transition-colors`}
+                  >
+                    <InstagramIcon className="w-4 h-4" />
+                    Instagram
+                  </a>
+                  <span aria-hidden>·</span>
+                  <a
+                    href={links.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1.5 hover:${T.text} transition-colors`}
+                  >
+                    <LinkedInIcon className="w-4 h-4" />
+                    LinkedIn
+                  </a>
+                  <span aria-hidden>·</span>
+                  <a
+                    href={`mailto:${links.email}`}
+                    className={`inline-flex items-center gap-1.5 hover:${T.text} transition-colors`}
+                  >
+                    <MailIcon className="w-4 h-4" />
+                    Email Us
+                  </a>
                 </div>
               </div>
             </Reveal>
@@ -1566,16 +1588,25 @@ function FlipIcon() {
     </svg>
   );
 }
-function LinkedInIcon() {
+function LinkedInIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
-    <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
     </svg>
   );
 }
-function MailIcon() {
+function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function MailIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
     </svg>
   );
