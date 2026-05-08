@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ComponentProps, type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type ComponentProps, type CSSProperties, type MouseEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
 import { isSectionSlug, type SectionSlug } from "@/app/lib/site-sections";
@@ -757,22 +757,27 @@ export function LandingPage({ content }: LandingPageProps) {
           <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-4">
             <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${T.textDim} text-center`}>Our Partners</p>
           </div>
-          <div className="partner-marquee-mask relative">
-            <div className="flex gap-12 md:gap-16 animate-marquee whitespace-nowrap">
-              {[...partners, ...partners].map((partner, i) => (
-                <div
-                  key={`${partner.id}-${i}`}
-                  className="h-20 md:h-24 w-52 md:w-64 shrink-0 flex items-center justify-center px-4 md:px-6 rounded-xl bg-transparent dark:bg-white/90 dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] transition-all"
-                >
-                  <Image
-                    src={partner.src}
-                    alt={`${partner.name} logo`}
-                    width={240}
-                    height={72}
-                    className="partner-marquee-logo max-h-14 md:max-h-[4.25rem] w-auto max-w-[min(220px,85vw)] md:max-w-[240px] object-contain opacity-100 dark:opacity-90 dark:hover:opacity-100 transition-opacity"
-                  />
-                </div>
-              ))}
+          <div className="partner-marquee-mask relative overflow-hidden">
+            <div
+              className="flex gap-12 md:gap-16 animate-marquee whitespace-nowrap"
+              style={{ "--partner-loop-copies": 6 } as CSSProperties}
+            >
+              {Array.from({ length: 6 }).flatMap((_, loopIndex) =>
+                partners.map((partner) => (
+                  <div
+                    key={`${partner.id}-${loopIndex}`}
+                    className="h-20 md:h-24 w-52 md:w-64 shrink-0 flex items-center justify-center px-4 md:px-6 rounded-xl bg-transparent dark:bg-white/90 dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)] transition-all"
+                  >
+                    <Image
+                      src={partner.src}
+                      alt={`${partner.name} logo`}
+                      width={240}
+                      height={72}
+                      className="partner-marquee-logo max-h-14 md:max-h-[4.25rem] w-auto max-w-[min(220px,85vw)] md:max-w-[240px] object-contain opacity-100 dark:opacity-90 dark:hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </section>
