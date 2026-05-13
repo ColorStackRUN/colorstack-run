@@ -1,12 +1,26 @@
 {
-  "name": "nextjs",
+  "name": "colorstack-run",
   "version": "0.1.0",
   "private": true,
+  "description": "ColorStackRUN chapter website at Rutgers University–Newark: public site, section routes, and admin CMS.",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ColorStackRUN/colorstack-run.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ColorStackRUN/colorstack-run/issues"
+  },
+  "homepage": "https://colorstackrun.org",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "supabase:migrate-content": "node scripts/supabase-migrate-content.mjs"
   },
   "dependencies": {
