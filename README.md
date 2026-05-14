@@ -69,13 +69,14 @@ These rules match how the GitHub org is set up today.
 1. **`main` is protected.** You cannot rely on pushing straight to `main`; that path is disabled for normal work.
 2. **All changes flow through pull requests.** Open a PR from your branch into `main`.
 3. **Merges require maintainer approval.** A maintainer must review and approve before GitHub allows the merge (your **main-protection** rule). Direct merges without review are not the intended workflow.
-4. **Branch naming** (short, descriptive suffixes):
+4. **Branch naming** (one branch **per PR / task**, not per push):
    - `feature/<short-description>` — new user-facing behavior or UI
    - `fix/<short-description>` — bug fixes
    - `chore/<short-description>` — documentation, tooling, config, refactors without product change  
    Examples: `feature/alumni-modal`, `fix/nav-scroll`, `chore/readme-full-update`.
-5. **Typical sequence:** sync `main` → create branch → commit → `git push -u origin <branch>` → open PR → address review → maintainer merges.
-6. **Bypass:** Only when a **maintainer explicitly instructs** a one-off bypass (for example an emergency hotfix) should anyone push or merge outside the normal PR + approval path.
+5. **How many branches?** Prefer **one short-lived branch per change you want reviewed and merged**. Push **many times** to that same branch while reviewers iterate with you; you do **not** need a new branch for every push. Avoid one long-lived `feature/` or `chore/` branch that mixes unrelated work across months — that makes PRs large and hard to approve. After a PR merges, **delete the remote branch** (GitHub offers this after merge) so the list of open branches stays small.
+6. **Typical sequence:** sync `main` → create one named branch for this task → commit (often many times) → `git push -u origin <branch>` (later just `git push`) → open PR → address review → maintainer merges → delete branch.
+7. **Bypass:** Only when a **maintainer explicitly instructs** a one-off bypass (for example an emergency hotfix) should anyone push or merge outside the normal PR + approval path.
 
 **CODEOWNERS:** The repo uses [`.github/CODEOWNERS`](.github/CODEOWNERS) so review requests can route to **`@ColorStackRUN/maintainers`**. Update that file if maintainer groups change.
 
