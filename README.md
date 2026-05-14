@@ -9,16 +9,30 @@ This document is meant to stay useful for **years**: it explains what the repo i
 ## Table of contents
 
 1. [About this repository](#about-this-repository)
-2. [Tech stack and prerequisites](#tech-stack-and-prerequisites)
-3. [Roles: who does what](#roles-who-does-what)
-4. [Git workflow (protected main)](#git-workflow-protected-main)
-5. [Getting started](#getting-started)
-6. [Scripts](#scripts)
-7. [Project structure](#project-structure)
-8. [Configuration (environment variables)](#configuration-environment-variables)
-9. [Admin CMS](#admin-cms)
-10. [Database and Supabase migrations](#database-and-supabase-migrations)
-11. [Agents, IDE, and automation](#agents-ide-and-automation)
+2. [Quick path: contributors and coding assistants](#quick-path-contributors-and-coding-assistants)
+3. [Tech stack and prerequisites](#tech-stack-and-prerequisites)
+4. [Roles: who does what](#roles-who-does-what)
+5. [Git workflow (protected main)](#git-workflow-protected-main)
+6. [Getting started](#getting-started)
+7. [Scripts](#scripts)
+8. [Project structure](#project-structure)
+9. [Configuration (environment variables)](#configuration-environment-variables)
+10. [Admin CMS](#admin-cms)
+11. [Database and Supabase migrations](#database-and-supabase-migrations)
+12. [Agents, IDE, and automation](#agents-ide-and-automation)
+
+---
+
+## Quick path: contributors and coding assistants
+
+Use this order whether you are a person or an **AI assistant** (Cursor, Claude Code, Copilot, and similar). It matches how maintainers expect work to land.
+
+1. **Read [AGENTS.md](AGENTS.md) before editing application code.** It states that this repo’s **Next.js** stack can differ from generic training or blog posts, and it repeats the **GitHub** rules agents often miss (protected `main`, pull requests, branch naming). **[CLAUDE.md](CLAUDE.md)** is a pointer to the same file for Claude-based tooling.
+2. **Run locally:** [Tech stack](#tech-stack-and-prerequisites) (Node LTS, **pnpm**) → [Getting started](#getting-started) (`pnpm install`, `pnpm dev`) → copy [.env.example](.env.example) to `.env.local` per [Configuration](#configuration-environment-variables). Use [Scripts](#scripts) and [Project structure](#project-structure) as you implement.
+3. **Persisted content / Supabase:** If the task touches hosted CMS or migrations, read [Database and Supabase migrations](#database-and-supabase-migrations) before changing schema or env vars.
+4. **Ship changes:** Follow [Git workflow (protected main)](#git-workflow-protected-main) — one named branch **per pull request**, push updates to that branch until merge, then delete the branch; do not push routine work straight to `main`.
+
+Chapter roles, CMS access policy, and legal notes for assets are still in the sections below.
 
 ---
 
@@ -207,7 +221,8 @@ This uploads existing `public/uploads/**` objects to Storage and seeds `public.s
 
 ## Agents, IDE, and automation
 
-- **[AGENTS.md](AGENTS.md)** — Read this when using **Cursor**, Copilot, or other agents: it includes **Next.js version caveats** (this repo may differ from generic Next docs) and the **same GitHub workflow** as above (branches, PRs, no routine pushes to `main`).
+- **Start with** [Quick path: contributors and coding assistants](#quick-path-contributors-and-coding-assistants) so the full README order matches what humans and agents should do.
+- **[AGENTS.md](AGENTS.md)** — Next.js caveats for this repo and the **GitHub workflow** for implementers (branches, PRs, no routine pushes to `main`). **[CLAUDE.md](CLAUDE.md)** points to the same file for Claude Code.
 - Automated commits should use the **chapter’s or maintainer’s** Git author identity so the GitHub contributor graph stays accurate.
 
 ---

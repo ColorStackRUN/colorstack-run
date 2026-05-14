@@ -4,6 +4,8 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+**Human runbook:** [README.md](README.md) covers install, scripts, env vars, project layout, Supabase migrations, CMS behavior, and the full Git workflow narrative. Read **this file first** for Next.js and git constraints agents often get wrong, then use the README as the operational checklist.
+
 ## GitHub workflow (agents and contributors)
 
 This repository lives under a **GitHub organization** with a **protected `main`** branch.
