@@ -123,7 +123,8 @@ export function LandingPage({ content }: LandingPageProps) {
 
   useEffect(() => {
     if (!sectionFromPath) return;
-    setActiveSection(sectionFromPath);
+    const id = window.setTimeout(() => setActiveSection(sectionFromPath), 0);
+    return () => window.clearTimeout(id);
   }, [sectionFromPath]);
 
   useEffect(() => {
@@ -143,12 +144,11 @@ export function LandingPage({ content }: LandingPageProps) {
 
   // Initialise from localStorage / system pref after mount (avoids hydration mismatch)
   useEffect(() => {
-    const stored = localStorage.getItem("colorstack-theme");
-    if (stored) {
+    const id = window.setTimeout(() => {
+      const stored = localStorage.getItem("colorstack-theme");
       setIsDark(stored === "dark");
-      return;
-    }
-    setIsDark(false);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const toggleTheme = () => {
@@ -596,7 +596,7 @@ export function LandingPage({ content }: LandingPageProps) {
                       className={`cursor-glow cursor-tilt relative flex flex-col p-7 rounded-2xl ${T.surf} border ${T.border} hover:border-red-500/25 transition-all h-full shadow-sm dark:shadow-none hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]`}
                       onMouseMove={handleCursorGlowMove}
                     >
-                      <span className="text-red-500 text-5xl font-black leading-none select-none mb-2">"</span>
+                      <span className="text-red-500 text-5xl font-black leading-none select-none mb-2">&ldquo;</span>
                       <p className={`${T.textMuted} text-sm leading-relaxed flex-1`}>{item.testimonial}</p>
                       <div className={`flex items-center gap-3 mt-6 pt-5 border-t ${T.border}`}>
                         {item.image ? (
@@ -1466,6 +1466,7 @@ function ImageWithSkeleton(props: ComponentProps<typeof Image>) {
       )}
       <Image
         {...props}
+        alt={props.alt ?? ""}
         onLoad={(event) => {
           setLoaded(true);
           props.onLoad?.(event);

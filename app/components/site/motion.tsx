@@ -73,19 +73,15 @@ export function AnimatedCounter({ value, className }: { value: string; className
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const [display, setDisplay] = useState("0");
   const reduceMotion = useReducedMotion();
+  const hasNumericAnimation = /^(\d+)(.*)/.test(value);
+  const renderedValue = reduceMotion || !hasNumericAnimation ? value : display;
 
   useEffect(() => {
-    if (reduceMotion) {
-      setDisplay(value);
-      return;
-    }
+    if (reduceMotion) return;
     if (!inView) return;
 
     const numMatch = value.match(/^(\d+)(.*)/);
-    if (!numMatch) {
-      setDisplay(value);
-      return;
-    }
+    if (!numMatch) return;
 
     const target = parseInt(numMatch[1], 10);
     const suffix = numMatch[2] ?? "";
@@ -103,5 +99,5 @@ export function AnimatedCounter({ value, className }: { value: string; className
     requestAnimationFrame(step);
   }, [inView, value, reduceMotion]);
 
-  return <span ref={ref} className={className}>{display}</span>;
+  return <span ref={ref} className={className}>{renderedValue}</span>;
 }

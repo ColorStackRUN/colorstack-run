@@ -72,10 +72,12 @@ function TeamCardPhysicsSpring({ children, freeze, className, extrudeZPx }: Spri
   const rafId = useRef<number | null>(null);
   const lastTick = useRef(0);
 
-  freezeRef.current = freeze;
-  extrudeRef.current = extrudeZPx;
+  useEffect(() => {
+    freezeRef.current = freeze;
+    extrudeRef.current = extrudeZPx;
+  }, [freeze, extrudeZPx]);
 
-  const tick = useCallback((time: number) => {
+  const tick = useCallback(function tickFrame(time: number) {
     const root = rootRef.current;
     if (!root) {
       rafId.current = null;
@@ -84,7 +86,7 @@ function TeamCardPhysicsSpring({ children, freeze, className, extrudeZPx }: Spri
 
     if (!lastTick.current) {
       lastTick.current = time;
-      rafId.current = requestAnimationFrame(tick);
+      rafId.current = requestAnimationFrame(tickFrame);
       return;
     }
 
@@ -143,7 +145,7 @@ function TeamCardPhysicsSpring({ children, freeze, className, extrudeZPx }: Spri
       return;
     }
 
-    rafId.current = requestAnimationFrame(tick);
+    rafId.current = requestAnimationFrame(tickFrame);
   }, []);
 
   const startLoop = useCallback(() => {
@@ -215,7 +217,10 @@ function TeamCardPhysicsSpring({ children, freeze, className, extrudeZPx }: Spri
 function TeamCardPhysicsDirect({ children, freeze, className }: Omit<Props, "disabled" | "mode">) {
   const rootRef = useRef<HTMLDivElement>(null);
   const freezeRef = useRef(freeze);
-  freezeRef.current = freeze;
+
+  useEffect(() => {
+    freezeRef.current = freeze;
+  }, [freeze]);
 
   const paint = useCallback((rx: number, ry: number, rz: number, leaving: boolean) => {
     const root = rootRef.current;
