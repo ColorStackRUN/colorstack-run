@@ -30,7 +30,7 @@ Use this order whether you are a person or an **AI assistant** (Cursor, Claude C
 1. **Read [AGENTS.md](AGENTS.md) before editing application code.** It states that this repo’s **Next.js** stack can differ from generic training or blog posts, and it repeats the **GitHub** rules agents often miss (protected `main`, pull requests, branch naming). **[CLAUDE.md](CLAUDE.md)** is a pointer to the same file for Claude-based tooling.
 2. **Run locally:** [Tech stack](#tech-stack-and-prerequisites) (Node LTS, **pnpm**) → [Getting started](#getting-started) (`pnpm install`, `pnpm dev`) → copy [.env.example](.env.example) to `.env.local` per [Configuration](#configuration-environment-variables). Use [Scripts](#scripts) and [Project structure](#project-structure) as you implement.
 3. **Persisted content / Supabase:** If the task touches hosted CMS or migrations, read [Database and Supabase migrations](#database-and-supabase-migrations) before changing schema or env vars.
-4. **Ship changes:** Follow [Git workflow (protected main)](#git-workflow-protected-main) — one named branch **per pull request**, push updates to that branch until merge, then delete the branch; do not push routine work straight to `main`.
+4. **Ship changes:** Follow [Git workflow (protected main)](#git-workflow-protected-main) — one named branch **per pull request**, push updates to that branch until merge, keep it up to date with `main`, fill out the PR template, and let GitHub auto-delete the branch after merge; do not push routine work straight to `main`.
 
 Chapter roles, CMS access policy, and legal notes for assets are still in the sections below.
 
@@ -88,11 +88,14 @@ These rules match how the GitHub org is set up today.
    - `fix/<short-description>` — bug fixes
    - `chore/<short-description>` — documentation, tooling, config, refactors without product change  
    Examples: `feature/alumni-modal`, `fix/nav-scroll`, `chore/readme-full-update`.
-5. **How many branches?** Prefer **one short-lived branch per change you want reviewed and merged**. Push **many times** to that same branch while reviewers iterate with you; you do **not** need a new branch for every push. Avoid one long-lived `feature/` or `chore/` branch that mixes unrelated work across months — that makes PRs large and hard to approve. After a PR merges, **delete the remote branch** (GitHub offers this after merge) so the list of open branches stays small.
-6. **Typical sequence:** sync `main` → create one named branch for this task → commit (often many times) → `git push -u origin <branch>` (later just `git push`) → open PR → address review → maintainer merges → delete branch.
-7. **Bypass:** Only when a **maintainer explicitly instructs** a one-off bypass (for example an emergency hotfix) should anyone push or merge outside the normal PR + approval path.
+5. **Keep PR branches current.** Before requesting review, update your branch with the latest `main` and rerun the relevant checks so reviewers are looking at code that can merge cleanly.
+6. **CI must pass.** Pull requests into `main` run GitHub Actions for dependency install, lint, typecheck, and production build. Treat red CI as a blocker unless a maintainer explicitly says otherwise.
+7. **Use the PR template.** [`.github/pull_request_template.md`](.github/pull_request_template.md) asks for summary of changes, summary of tests, post-PR activities, and impact assessment. Fill it out completely for human and agent reviewers.
+8. **How many branches?** Prefer **one short-lived branch per change you want reviewed and merged**. Push **many times** to that same branch while reviewers iterate with you; you do **not** need a new branch for every push. Avoid one long-lived `feature/` or `chore/` branch that mixes unrelated work across months — that makes PRs large and hard to approve. After a PR merges, GitHub should **auto-delete the remote branch** so the list of open branches stays small.
+9. **Typical sequence:** sync `main` → create one named branch for this task → commit (often many times) → `git push -u origin <branch>` (later just `git push`) → open PR with the template → address review and CI → maintainer merges → confirm branch cleanup.
+10. **Bypass:** Only when a **maintainer explicitly instructs** a one-off bypass (for example an emergency hotfix) should anyone push or merge outside the normal PR + approval path.
 
-**CODEOWNERS:** The repo uses [`.github/CODEOWNERS`](.github/CODEOWNERS) so review requests can route to **`@ColorStackRUN/maintainers`**. Update that file if maintainer groups change.
+**CODEOWNERS:** The repo uses [`.github/CODEOWNERS`](.github/CODEOWNERS) so review requests can route to **`@ColorStackRUN/maintainers`**. Important governance, CI, dependency/config, admin/auth, and Supabase migration files are explicitly listed there as maintainer-owned. Because `main-protection` requires CODEOWNER review, changes to those sensitive paths need maintainer approval before merge. Update CODEOWNERS if maintainer groups change.
 
 **Further reading:** [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
 
@@ -130,6 +133,7 @@ pnpm start
 | `pnpm build` | Production build |
 | `pnpm start` | Run the production build locally |
 | `pnpm lint` | ESLint |
+| `pnpm typecheck` | TypeScript check without emitting files |
 | `pnpm supabase:migrate-content` | Upload `public/uploads/**` to Supabase Storage and seed `site_content_store` (see [Database and Supabase migrations](#database-and-supabase-migrations)) |
 
 ---
@@ -157,6 +161,8 @@ High-level map (paths are under the repo root unless noted).
 | `public/` | Static assets (logos, uploads, etc.) |
 | `AGENTS.md` | Rules for AI agents and Cursor (Next.js + Git workflow) |
 | `.github/CODEOWNERS` | Default reviewers / ownership hints |
+| `.github/pull_request_template.md` | Required PR context for humans and agents |
+| `.github/workflows/ci.yml` | GitHub Actions checks for PRs and `main` |
 
 ---
 
@@ -223,6 +229,7 @@ This uploads existing `public/uploads/**` objects to Storage and seeds `public.s
 
 - **Start with** [Quick path: contributors and coding assistants](#quick-path-contributors-and-coding-assistants) so the full README order matches what humans and agents should do.
 - **[AGENTS.md](AGENTS.md)** — Next.js caveats for this repo and the **GitHub workflow** for implementers (branches, PRs, no routine pushes to `main`). **[CLAUDE.md](CLAUDE.md)** points to the same file for Claude Code.
+- **[.github/pull_request_template.md](.github/pull_request_template.md)** — PR checklist for humans and agents. It requires branch freshness with `main`, test summaries, post-merge cleanup, and impact assessment.
 - Automated commits should use the **chapter’s or maintainer’s** Git author identity so the GitHub contributor graph stays accurate.
 
 ---

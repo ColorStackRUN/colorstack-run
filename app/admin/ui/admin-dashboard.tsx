@@ -267,12 +267,12 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-[0.14em] font-semibold text-slate-500 border-t border-slate-100 mt-2">
               Tools
             </p>
-            <a
+            <Link
               href="/admin/changelog"
               className="block px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-700 hover:bg-slate-50 border border-transparent"
             >
               Change log
-            </a>
+            </Link>
           </nav>
         </aside>
 
@@ -998,21 +998,19 @@ function LabeledTimeInput({
   onChange: (value: string) => void;
 }) {
   const datalistId = useId();
-  const [draft, setDraft] = useState(formatTimeOption(value));
+  const formattedValue = formatTimeOption(value);
+  const [draftState, setDraftState] = useState(() => ({ sourceValue: value, draft: formattedValue }));
+  const draft = draftState.sourceValue === value ? draftState.draft : formattedValue;
   const resolvedSuggestions = suggestions ?? [];
-
-  useEffect(() => {
-    setDraft(formatTimeOption(value));
-  }, [value]);
 
   const onBlur = () => {
     const parsed = parseTimeInput(draft);
     if (!parsed) {
-      setDraft(formatTimeOption(value));
+      setDraftState({ sourceValue: value, draft: formattedValue });
       return;
     }
     onChange(parsed);
-    setDraft(formatTimeOption(parsed));
+    setDraftState({ sourceValue: parsed, draft: formatTimeOption(parsed) });
   };
 
   return (
@@ -1023,7 +1021,7 @@ function LabeledTimeInput({
         className="w-full rounded-xl border border-gray-300/90 bg-white px-3 py-2.5 text-gray-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
         value={draft}
         placeholder="e.g. 3:50 PM"
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => setDraftState({ sourceValue: value, draft: e.target.value })}
         onBlur={onBlur}
       />
       <datalist id={datalistId}>
@@ -1121,11 +1119,13 @@ function ImageUploadField({
 
   useEffect(() => {
     if (!showCardPreview || !sourceImageUrl || !croppedAreaPixels) {
-      setCardPreviewUrl((previous) => {
-        if (previous) URL.revokeObjectURL(previous);
-        return null;
-      });
-      return;
+      const id = window.setTimeout(() => {
+        setCardPreviewUrl((previous) => {
+          if (previous) URL.revokeObjectURL(previous);
+          return null;
+        });
+      }, 0);
+      return () => window.clearTimeout(id);
     }
 
     let isCancelled = false;
@@ -1426,7 +1426,7 @@ function GalleryGroupPanel({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400 py-1">No photos yet. Click "Add Photos" to upload.</p>
+        <p className="text-sm text-gray-400 py-1">No photos yet. Click &quot;Add Photos&quot; to upload.</p>
       )}
     </div>
   );

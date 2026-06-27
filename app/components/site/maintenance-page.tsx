@@ -89,8 +89,11 @@ function useRotatingStatus(messages: string[], intervalMs = 2600) {
       const id = window.setTimeout(() => setTyped(typed.slice(0, -1)), 22);
       return () => window.clearTimeout(id);
     }
-    setErasing(false);
-    setIndex((i) => (i + 1) % messages.length);
+    const id = window.setTimeout(() => {
+      setErasing(false);
+      setIndex((i) => (i + 1) % messages.length);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [typed, erasing, index, messages, intervalMs]);
 
   return typed;
@@ -100,9 +103,12 @@ function useUptime(startedAt: number | null) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     if (startedAt === null) return;
-    setNow(Date.now());
+    const initialId = window.setTimeout(() => setNow(Date.now()), 0);
     const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearTimeout(initialId);
+      window.clearInterval(id);
+    };
   }, [startedAt]);
   if (startedAt === null || now === null) return "00:00:00";
   const elapsedMs = Math.max(0, now - startedAt);
@@ -162,11 +168,7 @@ const LEVEL_STYLES = {
 };
 
 export function MaintenancePage() {
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  useEffect(() => {
-    setStartedAt(Date.now());
-  }, []);
-
+  const [startedAt] = useState(() => Date.now());
   const log = useTypewriterLog(BOOT_LOG_LINES);
   const status = useRotatingStatus(STATUS_LINES);
   const uptime = useUptime(startedAt);

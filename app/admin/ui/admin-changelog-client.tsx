@@ -1,23 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import type { AdminChangelogEntry } from "@/app/lib/admin-changelog-types";
 
 const buttonClass =
   "px-4 py-2 rounded-xl border border-black/80 bg-black text-white hover:bg-neutral-900 transition-all shadow-sm hover:shadow-md active:scale-[0.99]";
-
-/** Same on Node and browsers — used for the first paint so SSR + hydration match. */
-function formatUtcDeterministic(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const y = d.getUTCFullYear();
-  const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  const h = String(d.getUTCHours()).padStart(2, "0");
-  const mi = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${y}-${mo}-${day} ${h}:${mi} UTC`;
-}
 
 const CHANGELOG_DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -36,13 +23,9 @@ function formatWhenEastern(iso: string): string {
 }
 
 function ChangelogEntryTimestamp({ iso }: { iso: string }) {
-  const [label, setLabel] = useState(() => formatUtcDeterministic(iso));
-  useEffect(() => {
-    setLabel(formatWhenEastern(iso));
-  }, [iso]);
   return (
-    <time dateTime={iso} className="tabular-nums">
-      {label}
+    <time dateTime={iso} className="tabular-nums" suppressHydrationWarning>
+      {formatWhenEastern(iso)}
     </time>
   );
 }

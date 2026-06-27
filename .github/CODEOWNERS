@@ -1,1 +1,33 @@
+# Default reviewer group for all repository changes.
 * @ColorStackRUN/maintainers
+
+# Governance and GitHub automation. These files control review routing,
+# branch/CI expectations, and what runs with GitHub token permissions.
+/.github/CODEOWNERS @ColorStackRUN/maintainers
+/.github/pull_request_template.md @ColorStackRUN/maintainers
+/.github/workflows/** @ColorStackRUN/maintainers
+
+# Contributor and agent operating instructions.
+/AGENTS.md @ColorStackRUN/maintainers
+/CLAUDE.md @ColorStackRUN/maintainers
+/README.md @ColorStackRUN/maintainers
+
+# Dependency, runtime, and deployment-sensitive configuration.
+/package.json @ColorStackRUN/maintainers
+/pnpm-lock.yaml @ColorStackRUN/maintainers
+/package-lock.json @ColorStackRUN/maintainers
+/next.config.ts @ColorStackRUN/maintainers
+/proxy.ts @ColorStackRUN/maintainers
+/tsconfig.json @ColorStackRUN/maintainers
+/eslint.config.mjs @ColorStackRUN/maintainers
+/postcss.config.mjs @ColorStackRUN/maintainers
+
+# Admin, auth, server-only API, and Supabase service-role boundaries.
+/app/admin/** @ColorStackRUN/maintainers
+/app/api/admin/** @ColorStackRUN/maintainers
+/app/lib/admin-auth.ts @ColorStackRUN/maintainers
+/app/lib/admin-changelog-*.ts @ColorStackRUN/maintainers
+/app/lib/content-store.ts @ColorStackRUN/maintainers
+/app/lib/supabase-admin.ts @ColorStackRUN/maintainers
+/scripts/supabase-migrate-content.mjs @ColorStackRUN/maintainers
+/supabase/migrations/** @ColorStackRUN/maintainers
