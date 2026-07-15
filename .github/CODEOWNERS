@@ -1,5 +1,5 @@
 # Default reviewer group for all repository changes.
-* @ColorStackRUN/maintainers
+* @ColorStackRUN/maintainers @Jorgito-C
 
 # Governance and GitHub automation. These files control review routing,
 # branch/CI expectations, and what runs with GitHub token permissions.
