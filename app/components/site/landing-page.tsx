@@ -109,13 +109,13 @@ export function LandingPage({ content }: LandingPageProps) {
   const activeEvents = eventsView === "upcoming" ? upcomingEvents : pastEvents;
   const navLinks = useMemo(
     () => {
-      const items: { id: SectionSlug; href: string; label: string }[] = [
+      const items: { id: SectionSlug | "learn" | "opportunities" | "community"; href: string; label: string }[] = [
         { id: "about", href: "/about", label: "About" },
         { id: "events", href: "/events", label: "Events" },
+        { id: "learn", href: "/learn", label: "Learn" },
+        { id: "opportunities", href: "/opportunities", label: "Opportunities" },
+        { id: "community", href: "/community", label: "Community" },
       ];
-      if (gallery.length > 0) items.push({ id: "gallery", href: "/gallery", label: "Gallery" });
-      items.push({ id: "team", href: "/team", label: "Team" });
-      if (alumni.length > 0) items.push({ id: "alumni", href: "/alumni", label: "Alumni" });
       return items;
     },
     [gallery.length, alumni.length]
@@ -163,7 +163,7 @@ export function LandingPage({ content }: LandingPageProps) {
       setScrollY(y);
       setShowBackToTop(y > 420);
 
-      const sectionIds = navLinks.map((item) => item.id);
+      const sectionIds = navLinks.map((item) => item.id).filter(isSectionSlug);
       const marker = y + window.innerHeight * 0.35;
       let current = sectionIds[0] ?? "about";
       for (const id of sectionIds) {

@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { defaultSiteContent, type SiteContent } from "./content-types";
 import { getSupabaseAdminClient, isSupabaseConfigured } from "./supabase-admin";
+import { normalizeLearningResources, normalizeOpportunities } from "./hub-content";
 
 const contentFilePath = path.join(process.cwd(), "data", "site-content.json");
 const CONTENT_TABLE = "site_content_store";
@@ -29,6 +30,8 @@ function normalizeSiteContent(raw: SiteContent): SiteContent {
     gallery: raw.gallery ?? defaultSiteContent.gallery,
     alumni: raw.alumni ?? defaultSiteContent.alumni,
     testimonials: raw.testimonials ?? defaultSiteContent.testimonials,
+    learningResources: normalizeLearningResources(raw.learningResources),
+    opportunities: normalizeOpportunities(raw.opportunities),
   };
 }
 
