@@ -18,6 +18,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
   ];
+  entries.push({ url: `${base}/learn`, lastModified: now, changeFrequency: "weekly", priority: 0.85 });
+  entries.push({ url: `${base}/opportunities`, lastModified: now, changeFrequency: "daily", priority: 0.85 });
+  entries.push({ url: `${base}/community`, lastModified: now, changeFrequency: "weekly", priority: 0.8 });
+  for (const resource of content.learningResources) {
+    if (resource.published) entries.push({ url: `${base}/learn/${resource.slug}`, lastModified: now, changeFrequency: "monthly", priority: 0.7 });
+  }
 
   for (const section of SECTION_SLUGS) {
     if (!sectionIsPublished(section, content)) continue;

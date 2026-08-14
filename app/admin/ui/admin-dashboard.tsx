@@ -7,6 +7,8 @@ import { ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY } from "@/app/lib/admin-changelog-au
 import type { SiteContent } from "@/app/lib/content-types";
 import { buildSiteContentChangeSummary } from "@/app/lib/site-content-change-summary";
 import { AdminAuthorSelect } from "./admin-author-select";
+import { LearningResourcesEditor } from "./learning-resources-editor";
+import { OpportunitiesEditor } from "./opportunities-editor";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
@@ -20,14 +22,14 @@ type AdminGalleryGroup = {
 };
 
 const buttonClass =
-  "px-4 py-2 rounded-xl border border-black/80 bg-black text-white hover:bg-neutral-900 transition-all shadow-sm hover:shadow-md active:scale-[0.99]";
+  "px-3 py-2 rounded-lg border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600";
 const primaryButtonClass =
-  "px-4 py-2 rounded-xl bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700 transition-all shadow-lg shadow-red-700/20 disabled:opacity-70 active:scale-[0.99]";
+  "px-4 py-2 rounded-lg bg-[#E11D2E] text-white hover:bg-red-700 transition-colors shadow-sm shadow-red-900/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600";
 const destructiveLinkClass =
   "text-sm font-medium text-red-600 hover:text-red-700 hover:underline underline-offset-2";
 
 const sectionClass =
-  "rounded-3xl border border-white/80 bg-gradient-to-b from-white to-[#fff7f5] backdrop-blur p-6 md:p-7 shadow-[0_14px_36px_rgba(15,23,42,0.08)] space-y-5";
+  "admin-section space-y-5";
 const EVENT_TYPE_OPTIONS = ["Workshop", "Social", "Panel", "Info Session"];
 const EVENT_STATUS_OPTIONS = ["auto", "upcoming", "past"] as const;
 const GRADUATION_YEAR_OPTIONS = Array.from({ length: 9 }, (_, i) => String(2024 + i));
@@ -185,7 +187,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
     window.location.href = "/admin/login";
   };
 
-  const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni" | "partners") => {
+  const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni" | "partners" | "learning") => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("scope", scope);
@@ -225,7 +227,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [publishModalOpen, saving]);
 
   useEffect(() => {
-    const sectionIds = ["links", "events", "team", "partners", "gallery", "alumni", "testimonials"];
+    const sectionIds = ["links", "events", "learning", "opportunities", "team", "partners", "gallery", "alumni", "testimonials"];
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -247,44 +249,39 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [hasGallery, hasAlumni]);
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-[#fff7f2] via-[#fffdfb] to-[#f7faff] px-6 py-8 md:px-10">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-red-300/30 blur-3xl" />
-        <div className="absolute top-28 right-[-90px] h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
-        <div className="absolute bottom-8 left-1/3 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
-      </div>
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-[220px_minmax(0,1fr)] gap-6">
-        <aside className="hidden lg:block sticky top-6 self-start">
-          <nav className="rounded-2xl border border-white/80 bg-gradient-to-b from-white to-red-50/30 backdrop-blur p-3 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-            <p className="px-3 py-2 text-xs uppercase tracking-[0.14em] font-semibold text-slate-500">Sections</p>
+    <main className="min-h-screen bg-[#F5F6F8] px-4 py-4 text-zinc-900 md:px-6">
+      <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[236px_minmax(0,1fr)]">
+        <aside className="hidden lg:block sticky top-4 self-start">
+          <nav className="admin-rail">
+            <div className="mb-7 px-3"><p className="text-lg font-bold text-white">ColorStack<span className="text-red-500">RUN</span></p><p className="mt-1 font-mono text-[10px] uppercase tracking-[.18em] text-zinc-400">Content console</p></div>
+            <p className="admin-rail-label">Sections</p>
             <AdminNavItem href="#admin-links" label="Chapter Links" active={activeSection === "links"} />
             <AdminNavItem href="#admin-events" label="Events" active={activeSection === "events"} />
+            <AdminNavItem href="#admin-learning" label="Learning Hub" active={activeSection === "learning"} />
+            <AdminNavItem href="#admin-opportunities" label="Opportunities" active={activeSection === "opportunities"} />
             <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
             <AdminNavItem href="#admin-partners" label="Partners" active={activeSection === "partners"} />
             <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
             <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
             <AdminNavItem href="#admin-testimonials" label="Testimonials" active={activeSection === "testimonials"} />
-            <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-[0.14em] font-semibold text-slate-500 border-t border-slate-100 mt-2">
-              Tools
-            </p>
+            <p className="admin-rail-label mt-5 border-t border-white/10 pt-5">Tools</p>
             <Link
               href="/admin/changelog"
-              className="block px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-700 hover:bg-slate-50 border border-transparent"
+              className="admin-rail-link"
             >
               Change log
             </Link>
+            <Link href="/" className="admin-rail-link">View public site ↗</Link>
           </nav>
         </aside>
 
-        <div className="space-y-8">
-        <header className="rounded-3xl border border-white/80 bg-gradient-to-r from-white via-white to-red-100/45 backdrop-blur p-6 md:p-7 shadow-[0_20px_50px_rgba(185,28,28,0.12)]">
+        <div className="space-y-5">
+        <header className="sticky top-3 z-20 rounded-xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur md:px-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="inline-flex text-xs uppercase tracking-[0.14em] font-semibold text-red-700 bg-red-50 border border-red-100 px-3 py-1 rounded-full mb-3">
-                Content Management
-              </p>
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">ColorStackRUN Admin</h1>
-              <p className="text-slate-600 mt-1">Update events, team, partner logos, gallery, and more from one place.</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.16em] text-red-700">Content console</p>
+              <h1 className="mt-1 text-xl font-bold text-zinc-950">ColorStackRUN Admin</h1>
+              <p className="mt-1 text-sm text-zinc-600">{saving ? "Publishing…" : dirty ? "Unsaved changes" : "Published"}{lastSavedAt ? ` · saved ${lastSavedAt}` : ""}</p>
               <p className="mt-2">
                 <Link
                   href="/admin/changelog"
@@ -315,8 +312,14 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
               </button>
             </div>
           </div>
-          {dirty && <p className="mt-4 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 inline-block">You have unsaved changes.</p>}
+          {dirty && <p className="mt-3 inline-block rounded-md bg-[#FFF1F2] px-2 py-1 font-mono text-xs text-red-700">DRAFT CHANGES</p>}
         </header>
+
+        <nav aria-label="Jump to admin section" className="flex gap-2 overflow-x-auto rounded-lg border border-zinc-200 bg-white p-2 lg:hidden">
+          {["links","events","learning","opportunities","team","partners","gallery","alumni","testimonials"].map((id) => <a key={id} href={`#admin-${id}`} className="whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-red-700">{id.replace("-", " ")}</a>)}
+        </nav>
+
+        <div className="admin-pulse" aria-label="Content pulse"><span>{content.events.length} events</span><span>{content.team.length} leaders</span><span>{content.partners.length} partners</span><span>{content.gallery.length} photos</span><span>{content.alumni.length} alumni</span><span>{content.learningResources.length} learning</span><span>{content.opportunities.length} opportunities</span></div>
 
         <section id="admin-links" className={sectionClass}>
           <h2 className="text-2xl font-semibold text-gray-900">Chapter Links</h2>
@@ -466,6 +469,9 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             ))}
           </div>
         </section>
+
+        <LearningResourcesEditor content={content} onChange={update} onUpload={(file) => uploadImage(file, "learning")} />
+        <OpportunitiesEditor content={content} onChange={update} />
 
         <section id="admin-team" className={sectionClass}>
           <div className="flex items-center justify-between">
@@ -883,10 +889,10 @@ function AdminNavItem({ href, label, active }: { href: string; label: string; ac
   return (
     <a
       href={href}
-      className={`block px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+      className={`admin-rail-link ${
         active
-          ? "bg-gradient-to-r from-red-50 to-red-100/60 text-red-700 border border-red-200 shadow-sm"
-          : "text-slate-700 hover:bg-slate-50 border border-transparent"
+          ? "admin-rail-link-active"
+          : ""
       }`}
     >
       {label}
@@ -897,7 +903,7 @@ function AdminNavItem({ href, label, active }: { href: string; label: string; ac
 function Toast({ toast }: { toast: { type: "success" | "error"; text: string } | null }) {
   if (!toast) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
       <div
         className={`px-4 py-3 rounded-xl shadow-lg border text-sm font-medium ${
           toast.type === "success"

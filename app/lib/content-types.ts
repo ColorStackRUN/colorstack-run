@@ -77,6 +77,25 @@ export type PartnerItem = {
   src: string;
 };
 
+export type LearningLevel = "beginner" | "intermediate" | "advanced" | "all-levels";
+export type LearningChapter = { timestamp: string; label: string };
+export type LearningResource = {
+  id: string; slug: string; title: string; series: string; summary: string; description: string;
+  speakerName: string; speakerTitle?: string; speakerOrganization?: string; speakerBio?: string;
+  sessionDate: string; durationMinutes?: number; level: LearningLevel; topics: string[];
+  recordingUrl: string; thumbnail?: string; slidesUrl?: string; notesUrl?: string; codeUrl?: string;
+  transcriptUrl?: string; chapters?: LearningChapter[]; featured: boolean; published: boolean;
+  recordingConsentConfirmed: boolean;
+};
+
+export type OpportunityCategory = "internship-job" | "scholarship" | "fellowship" | "hackathon" | "conference" | "research" | "mentorship" | "campus-leadership";
+export type WorkMode = "remote" | "hybrid" | "in-person" | "not-applicable";
+export type Opportunity = {
+  id: string; title: string; organization: string; category: OpportunityCategory; summary: string;
+  eligibility?: string; location?: string; workMode?: WorkMode; deadline?: string; compensation?: string;
+  applyUrl: string; sourceUrl?: string; postedAt: string; verifiedAt?: string; featured: boolean; published: boolean;
+};
+
 export type SiteContent = {
   links: SiteLinks;
   stats: StatItem[];
@@ -87,6 +106,8 @@ export type SiteContent = {
   gallery: GalleryImage[];
   alumni: AlumniMember[];
   testimonials: TestimonialItem[];
+  learningResources: LearningResource[];
+  opportunities: Opportunity[];
 };
 
 export const defaultSiteContent: SiteContent = {
@@ -213,4 +234,6 @@ export const defaultSiteContent: SiteContent = {
   gallery: [],
   alumni: [],
   testimonials: [],
+  learningResources: [],
+  opportunities: [],
 };
