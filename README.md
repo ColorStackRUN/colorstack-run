@@ -213,6 +213,11 @@ Apply migrations in order in the Supabase SQL editor (or your org’s migration 
 - `supabase/migrations/20260504180000_admin_changelog.sql`
 - `supabase/migrations/20260504190000_admin_changelog_author_name.sql` — use if an older DB created `admin_changelog` without `author_name`.
 
+### 3. Growth-ready CMS tables (additive, before a future application cutover)
+
+- `supabase/migrations/20260826230536_add_growth_content_tables.sql`
+- Adds relational records for media metadata, learning resources and chapters, and opportunities. Image/video bytes remain in Supabase Storage; the database stores references and content metadata only. This migration is additive: the current `site_content_store` JSONB document remains the active application source until a separately reviewed backfill and code cutover.
+
 ### 3. Backfill from repo assets
 
 With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set:
