@@ -9,6 +9,8 @@ import type {
   StatItem,
   TeamMember,
   TestimonialItem,
+  LearningResource,
+  Opportunity,
 } from "./content-types";
 
 function stableStringify(value: unknown): string {
@@ -102,6 +104,8 @@ const TESTIMONIAL_FIELDS: (keyof TestimonialItem & string)[] = [
   "testimonial",
   "image",
 ];
+const LEARNING_FIELDS: (keyof LearningResource & string)[] = ["title", "slug", "series", "published", "featured", "recordingUrl", "topics"];
+const OPPORTUNITY_FIELDS: (keyof Opportunity & string)[] = ["title", "organization", "published", "featured", "deadline", "applyUrl"];
 
 const MAX_LINES = 45;
 
@@ -120,6 +124,8 @@ export function buildSiteContentChangeSummary(before: SiteContent, after: SiteCo
   lines.push(
     ...summarizeIdArray<StatItem>("Stats", before.stats, after.stats, (s) => s.label || s.id, STAT_FIELDS)
   );
+  lines.push(...summarizeIdArray<LearningResource>("Learning session", before.learningResources, after.learningResources, (x) => x.title || x.slug || x.id, LEARNING_FIELDS));
+  lines.push(...summarizeIdArray<Opportunity>("Opportunity", before.opportunities, after.opportunities, (x) => x.title || x.id, OPPORTUNITY_FIELDS));
   lines.push(
     ...summarizeIdArray<ImpactItem>("Impact", before.impact, after.impact, (i) => i.title || i.id, IMPACT_FIELDS)
   );
