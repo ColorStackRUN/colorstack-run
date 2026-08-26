@@ -17,6 +17,7 @@ function getRequiredEnv(name: "SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY"): str
 }
 
 export function isSupabaseConfigured(): boolean {
+  if (process.env.DISABLE_SUPABASE === "true") return false;
   return Boolean(
     (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL) &&
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,4 +37,3 @@ export function getSupabaseAdminClient(): SupabaseClient {
   });
   return cachedClient;
 }
-

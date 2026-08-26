@@ -227,7 +227,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   }, [publishModalOpen, saving]);
 
   useEffect(() => {
-    const sectionIds = ["links", "events", "learning", "opportunities", "team", "partners", "gallery", "alumni", "testimonials"];
+    const sectionIds = ["links", "events", "learning", "opportunities", "team", "committee", "partners", "gallery", "alumni", "testimonials"];
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -260,6 +260,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
             <AdminNavItem href="#admin-learning" label="Learning Hub" active={activeSection === "learning"} />
             <AdminNavItem href="#admin-opportunities" label="Opportunities" active={activeSection === "opportunities"} />
             <AdminNavItem href="#admin-team" label="Executive Board" active={activeSection === "team"} />
+            <AdminNavItem href="#admin-committee" label="Committee" active={activeSection === "committee"} />
             <AdminNavItem href="#admin-partners" label="Partners" active={activeSection === "partners"} />
             <AdminNavItem href="#admin-gallery" label="Gallery" active={activeSection === "gallery"} />
             <AdminNavItem href="#admin-alumni" label="Alumni Network" active={activeSection === "alumni"} />
@@ -536,6 +537,27 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
               </div>
             ))}
           </div>
+        </section>
+
+        <section id="admin-committee" className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <div><h2 className="text-2xl font-semibold text-gray-900">Committee Members</h2><p className="mt-1 text-sm text-gray-500">Committee members appear below the Executive Board on the public site.</p></div>
+            <button className={buttonClass} onClick={() => update({ ...content, committee: [...content.committee, { id: crypto.randomUUID(), name: "New Committee Member", role: "Committee Role", bio: "Short bio", linkedin: "https://www.linkedin.com/" }] })}>Add Member</button>
+          </div>
+          {content.committee.length > 0 ? <div className="space-y-6">{content.committee.map((member) => (
+            <div key={member.id} className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
+              <div className="flex justify-end"><button className={destructiveLinkClass} onClick={() => update({ ...content, committee: content.committee.filter((m) => m.id !== member.id) })}>Remove</button></div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <LabeledInput label="Name" value={member.name} onChange={(value) => updateCommitteeMember(content, member.id, { name: value }, update)} />
+                <LabeledInput label="Committee Role" value={member.role} onChange={(value) => updateCommitteeMember(content, member.id, { role: value }, update)} />
+                <LabeledInput label="LinkedIn URL" value={member.linkedin} onChange={(value) => updateCommitteeMember(content, member.id, { linkedin: value }, update)} />
+                <LabeledDropdown label="Graduation Year" value={member.graduationYear ?? ""} options={["", ...GRADUATION_YEAR_OPTIONS]} onChange={(value) => updateCommitteeMember(content, member.id, { graduationYear: value || undefined }, update)} formatOptionLabel={(option) => option === "" ? "Not specified" : option} />
+                <LabeledEmailInput label="Email" value={member.email ?? ""} onChange={(value) => updateCommitteeMember(content, member.id, { email: value || undefined }, update)} />
+              </div>
+              <LabeledTextArea label="Bio" value={member.bio} onChange={(value) => updateCommitteeMember(content, member.id, { bio: value }, update)} />
+              <ImageUploadField label="Portrait Image" currentUrl={member.image} cropShape="rect" cropAspect={3 / 4} allowReCrop onUpload={async (file) => { const url = await uploadImage(file, "team"); updateCommitteeMember(content, member.id, { image: url }, update); }} />
+            </div>
+          ))}</div> : <p className="text-sm text-gray-600">No committee members yet. Add one when their profile is ready to share.</p>}
         </section>
 
         <section id="admin-partners" className={sectionClass}>
@@ -1482,6 +1504,13 @@ function updateMember(content: SiteContent, id: string, patch: Partial<SiteConte
   update({
     ...content,
     team: content.team.map((member) => (member.id === id ? { ...member, ...patch } : member)),
+  });
+}
+
+function updateCommitteeMember(content: SiteContent, id: string, patch: Partial<SiteContent["committee"][number]>, update: (content: SiteContent) => void) {
+  update({
+    ...content,
+    committee: content.committee.map((member) => (member.id === id ? { ...member, ...patch } : member)),
   });
 }
 

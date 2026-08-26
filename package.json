@@ -21,7 +21,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "supabase:migrate-content": "node scripts/supabase-migrate-content.mjs"
+    "supabase:migrate-content": "node scripts/supabase-migrate-content.mjs",
+    "supabase:backfill-media": "node scripts/backfill-media-assets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
