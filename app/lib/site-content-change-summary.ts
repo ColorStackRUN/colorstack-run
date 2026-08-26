@@ -136,6 +136,9 @@ export function buildSiteContentChangeSummary(before: SiteContent, after: SiteCo
     ...summarizeIdArray<TeamMember>("Executive board", before.team, after.team, (t) => t.name || t.id, TEAM_FIELDS)
   );
   lines.push(
+    ...summarizeIdArray<TeamMember>("Committee", before.committee, after.committee, (m) => m.name || m.id, TEAM_FIELDS)
+  );
+  lines.push(
     ...summarizeIdArray<PartnerItem>("Partners", before.partners, after.partners, (p) => p.name || p.id, PARTNER_FIELDS)
   );
   lines.push(

@@ -217,6 +217,7 @@ Apply migrations in order in the Supabase SQL editor (or your org’s migration 
 
 - `supabase/migrations/20260826230536_add_growth_content_tables.sql`
 - Adds relational records for media metadata, learning resources and chapters, and opportunities. Image/video bytes remain in Supabase Storage; the database stores references and content metadata only. This migration is additive: the current `site_content_store` JSONB document remains the active application source until a separately reviewed backfill and code cutover.
+- After applying that migration, use `pnpm supabase:backfill-media` to register the objects already in the configured Storage bucket with `media_assets`. The command is idempotent and does not upload, delete, or rewrite existing media.
 
 ### 3. Backfill from repo assets
 

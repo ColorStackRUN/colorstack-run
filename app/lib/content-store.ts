@@ -26,6 +26,7 @@ function normalizeSiteContent(raw: SiteContent): SiteContent {
     impact: raw.impact ?? defaultSiteContent.impact,
     events: normalizedEvents,
     team: raw.team ?? defaultSiteContent.team,
+    committee: Array.isArray(raw.committee) ? raw.committee : defaultSiteContent.committee,
     partners: Array.isArray(raw.partners) ? raw.partners : defaultSiteContent.partners,
     gallery: raw.gallery ?? defaultSiteContent.gallery,
     alumni: raw.alumni ?? defaultSiteContent.alumni,

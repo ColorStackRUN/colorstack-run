@@ -70,5 +70,35 @@ export async function POST(request: Request) {
   }
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
-  return NextResponse.json({ url: data.publicUrl });
+  const { data: asset, error: assetError } = await supabase
+    .from("media_assets")
+    .upsert(
+      {
+        bucket_id: bucket,
+        storage_path: storagePath,
+        public_url: data.publicUrl,
+        scope,
+        content_type: file.type,
+        byte_size: file.size,
+      },
+      { onConflict: "bucket_id,storage_path" }
+    )
+    .select("id")
+    .single<{ id: string }>();
+
+  if (assetError?.code === "PGRST205") {
+    // Keep CMS uploads working during a rolling deployment where the app is
+    // live before the additive media registry migration has been applied.
+    return NextResponse.json({ url: data.publicUrl, assetId: null, mediaRegistryPending: true });
+  }
+
+  if (assetError || !asset) {
+    await supabase.storage.from(bucket).remove([storagePath]);
+    return NextResponse.json(
+      { error: "Image uploaded, but its media record could not be saved. The upload was rolled back." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ url: data.publicUrl, assetId: asset.id });
 }

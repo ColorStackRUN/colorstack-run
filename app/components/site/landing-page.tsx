@@ -24,6 +24,41 @@ type ActiveAlumniStoryState = {
 };
 type ActiveTeamMemberState = SiteContent["team"][number];
 
+type CommitteeCardProps = {
+  member: SiteContent["committee"][number];
+  flipped: boolean;
+  onFlip: () => void;
+  onOpen: () => void;
+  reducedMotion: boolean | null;
+  emailFallback: string;
+};
+
+function CommitteeMemberCard({ member, flipped, onFlip, onOpen, reducedMotion, emailFallback }: CommitteeCardProps) {
+  const initials = member.name.split(" ").map((part) => part[0]).join("").slice(0, 2);
+  return <Reveal>
+    <div className="group relative select-none aspect-[10/16] md:aspect-[3/4]" style={{ perspective: "1200px" }} onClick={() => {
+      if (window.matchMedia("(max-width: 767px)").matches) { onOpen(); return; }
+      onFlip();
+    }}>
+      <TeamCardPhysicsShell mode={TEAM_CARD_PHYSICS_MODE} disabled={!!reducedMotion} freeze={flipped} className="relative h-full w-full">
+        <motion.div className="relative h-full w-full cursor-pointer" style={{ transformStyle: "preserve-3d" }} animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="absolute inset-0 rounded-2xl overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
+            {member.image ? <Image src={member.image} alt={member.name} fill className="object-cover" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" /> : <div className="absolute inset-0 bg-gradient-to-br from-red-100 via-gray-100 to-gray-200 dark:from-red-950/80 dark:via-zinc-900 dark:to-black"><div className="absolute inset-0 flex items-center justify-center"><span className="text-[80px] font-black text-black/[0.05] dark:text-white/[0.08] select-none">{initials}</span></div></div>}
+            <div className="absolute inset-x-0 top-0 h-24 md:h-40 bg-gradient-to-b from-black/65 md:from-black/80 to-transparent" /><div className="absolute inset-x-0 bottom-0 h-[58%] md:h-1/2 bg-gradient-to-t from-black/92 to-transparent" />
+            <div className="absolute left-4 right-4 bottom-4 md:bottom-auto md:top-4 md:right-4 md:pr-20"><p className="text-red-400 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.12em] md:tracking-widest mb-1 truncate">{member.role}</p><h4 className="text-white font-bold text-lg md:text-xl leading-tight line-clamp-2 md:line-clamp-none">{member.name}</h4></div>
+            {member.graduationYear && <div className={`absolute top-4 right-4 transition-opacity duration-150 ${flipped ? "opacity-0" : "opacity-100"}`} style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}><span className="inline-flex px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white/80 text-[10px] font-semibold border border-white/20">Class of {member.graduationYear}</span></div>}
+            <div className={`absolute bottom-5 inset-x-0 flex justify-center pointer-events-none transition-all duration-150 ${flipped ? "translate-y-3 opacity-0" : "translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100"}`} style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}><span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/55 backdrop-blur-sm rounded-full text-white text-xs font-medium border border-white/20"><FlipIcon /> View Bio</span></div>
+            <div className="absolute inset-0 rounded-2xl border border-transparent group-hover:border-red-500/40 transition-colors duration-300 pointer-events-none" />
+          </div>
+          <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-900 to-black border border-white/[0.08]" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+            <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-red-600 to-red-500" /><div className="flex flex-col h-full p-5 pt-6"><div className="flex items-center gap-2.5 md:gap-3 mb-3 md:mb-4">{member.image ? <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-red-500/40 shrink-0"><Image src={member.image} alt={member.name} fill className="object-cover" sizes="48px" /></div> : <div className="w-12 h-12 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0"><span className="text-red-400 text-sm font-bold">{initials}</span></div>}<div className="min-w-0"><p className="text-red-400 text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.16em] leading-tight break-words">{member.role}</p><h4 className="text-white font-bold text-[15px] md:text-base leading-tight">{member.name}</h4></div></div><div className="flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><p className="text-white/78 text-[13px] md:text-sm leading-relaxed">{member.bio}</p></div><div className="flex gap-2 mt-3"><a href={member.linkedin} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-xs font-semibold transition-all"><LinkedInIcon /> LinkedIn</a><a href={`mailto:${member.email ?? emailFallback}`} onClick={(event) => event.stopPropagation()} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 hover:border-white/20 rounded-xl text-white text-xs font-semibold transition-all"><MailIcon /> Email</a></div><p className="text-white/40 text-[10px] text-center mt-2">Click to close</p></div>
+          </div>
+        </motion.div>
+      </TeamCardPhysicsShell>
+    </div>
+  </Reveal>;
+}
+
 const ALUMNI_COLORS = [
   "#dc2626", "#9333ea", "#ea580c", "#16a34a", "#ca8a04", "#0891b2",
 ];
@@ -99,7 +134,7 @@ export function LandingPage({ content }: LandingPageProps) {
     return isSectionSlug(seg) ? seg : null;
   }, [pathname]);
 
-  const { links, events, stats, team, impact, gallery, alumni, testimonials } = content;
+  const { links, events, stats, team, committee, impact, gallery, alumni, testimonials } = content;
   const partners = content.partners.filter((p) => p.src.trim().length > 0);
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
   const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents);
@@ -976,6 +1011,24 @@ export function LandingPage({ content }: LandingPageProps) {
               );
             })}
           </div>
+
+          {committee.length > 0 && (
+            <div className="mt-14 md:mt-18">
+              <Reveal>
+                <div className="text-center mb-7 md:mb-8">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500 mb-3">Committee Members</p>
+                  <h3 className={`text-2xl md:text-3xl font-black tracking-tight ${T.text}`}>The team behind the work</h3>
+                </div>
+              </Reveal>
+              <div className="mx-auto w-[78%] max-w-3xl grid grid-cols-2 md:w-full md:grid-cols-3 gap-5 md:gap-6">
+                {committee.map((member) => {
+                  return (
+                    <CommitteeMemberCard key={member.id} member={member} flipped={flippedCard === member.id} onFlip={() => setFlippedCard(flippedCard === member.id ? null : member.id)} onOpen={() => { setFlippedCard(null); setActiveTeamMember(member); }} reducedMotion={reduceMotion} emailFallback={links.email} />
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </MotionSection>
 

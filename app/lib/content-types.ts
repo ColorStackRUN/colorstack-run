@@ -102,6 +102,7 @@ export type SiteContent = {
   impact: ImpactItem[];
   events: EventItem[];
   team: TeamMember[];
+  committee: TeamMember[];
   partners: PartnerItem[];
   gallery: GalleryImage[];
   alumni: AlumniMember[];
@@ -209,6 +210,7 @@ export const defaultSiteContent: SiteContent = {
       linkedin: "https://www.linkedin.com/in/obianuju-enekebe/",
     },
   ],
+  committee: [],
   partners: [
     {
       id: "partner-coreweave",
