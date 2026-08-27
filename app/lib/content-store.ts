@@ -8,6 +8,15 @@ const contentFilePath = path.join(process.cwd(), "data", "site-content.json");
 const CONTENT_TABLE = "site_content_store";
 const PRIMARY_CONTENT_ID = "primary";
 
+export type SiteContentSnapshot = {
+  content: SiteContent;
+  revision: number;
+};
+
+export type SiteContentWriteResult =
+  | { status: "updated"; revision: number }
+  | { status: "conflict" };
+
 function normalizeSiteContent(raw: SiteContent): SiteContent {
   const normalizedEvents = (raw.events ?? defaultSiteContent.events).map((event) => {
     const legacy = event as { time?: string; startTime?: string; endTime?: string };
@@ -47,44 +56,49 @@ async function readSiteContentFromFile(): Promise<SiteContent> {
   }
 }
 
-async function readSiteContentFromSupabase(): Promise<SiteContent | null> {
+async function readSiteContentFromSupabase(): Promise<SiteContentSnapshot | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from(CONTENT_TABLE)
-    .select("content_json")
+    .select("content_json, revision")
     .eq("id", PRIMARY_CONTENT_ID)
-    .maybeSingle<{ content_json: SiteContent }>();
+    .maybeSingle<{ content_json: SiteContent; revision: number }>();
   if (error || !data?.content_json) return null;
-  return normalizeSiteContent(data.content_json);
+  return { content: normalizeSiteContent(data.content_json), revision: data.revision };
+}
+
+export async function readSiteContentSnapshot(): Promise<SiteContentSnapshot> {
+  const fromSupabase = await readSiteContentFromSupabase();
+  if (fromSupabase) return fromSupabase;
+  return { content: await readSiteContentFromFile(), revision: 0 };
 }
 
 export async function readSiteContent(): Promise<SiteContent> {
-  const fromSupabase = await readSiteContentFromSupabase();
-  if (fromSupabase) return fromSupabase;
-  return readSiteContentFromFile();
+  return (await readSiteContentSnapshot()).content;
 }
 
-async function writeSiteContentToSupabase(content: SiteContent): Promise<void> {
+async function writeSiteContentToSupabase(content: SiteContent, expectedRevision: number): Promise<SiteContentWriteResult> {
   if (!isSupabaseConfigured()) {
     throw new Error("Supabase is not configured.");
   }
   const supabase = getSupabaseAdminClient();
-  const { error } = await supabase.from(CONTENT_TABLE).upsert(
-    {
-      id: PRIMARY_CONTENT_ID,
-      content_json: content,
-    },
-    { onConflict: "id" }
-  );
+  const { data, error } = await supabase
+    .rpc("update_site_content_if_revision_matches", {
+      expected_revision: expectedRevision,
+      next_content: content,
+    })
+    .maybeSingle<{ revision: number }>();
   if (error) {
     throw new Error(`Failed to write content to Supabase: ${error.message}`);
   }
+  if (!data) return { status: "conflict" };
+  return { status: "updated", revision: data.revision };
 }
 
-export async function writeSiteContent(content: SiteContent): Promise<void> {
+export async function writeSiteContent(content: SiteContent, expectedRevision: number): Promise<SiteContentWriteResult> {
   const normalized = normalizeSiteContent(content);
-  await writeSiteContentToSupabase(normalized);
+  return writeSiteContentToSupabase(normalized, expectedRevision);
 }
 
 export async function syncLocalSiteContentToSupabase(): Promise<void> {
@@ -93,7 +107,11 @@ export async function syncLocalSiteContentToSupabase(): Promise<void> {
   }
   try {
     const localContent = await readSiteContentFromFile();
-    await writeSiteContentToSupabase(localContent);
+    const snapshot = await readSiteContentSnapshot();
+    const result = await writeSiteContentToSupabase(localContent, snapshot.revision);
+    if (result.status === "conflict") {
+      throw new Error("Content changed while the local sync was running.");
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown sync error";
     throw new Error(`Failed syncing local content to Supabase: ${message}`);

@@ -10,6 +10,7 @@ import { OpportunitiesEditor } from "./opportunities-editor";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
+  initialRevision: number;
   publishingDisabled: boolean;
   admin: {
     email: string;
@@ -43,9 +44,75 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   return `${String(hour).padStart(2, "0")}:${minute}`;
 });
 const subscribeToNothing = () => () => {};
+const CONTENT_SECTION_KEYS = ["links", "stats", "impact", "events", "team", "committee", "partners", "gallery", "alumni", "testimonials", "learningResources", "opportunities"] as const;
+const CONTENT_SECTION_LABELS: Record<ContentSectionKey, string> = {
+  links: "Chapter links", stats: "Stats", impact: "Impact", events: "Events", team: "Executive Board", committee: "Committee", partners: "Partners", gallery: "Gallery", alumni: "Alumni", testimonials: "Testimonials", learningResources: "Learning Hub", opportunities: "Opportunities",
+};
+const PUBLISH_CONFLICT_STORAGE_KEY = "colorstackrun-admin-publish-conflict";
+const PUBLISH_CONFLICT_EVENT = "colorstackrun-admin-publish-conflict-change";
 
-export function AdminDashboard({ initialContent, admin, publishingDisabled }: AdminDashboardProps) {
+type ContentSectionKey = (typeof CONTENT_SECTION_KEYS)[number];
+type ConflictChoice = "mine" | "latest";
+type PublishConflict = {
+  baseline: SiteContent;
+  mine: SiteContent;
+  latest: SiteContent;
+  latestRevision: number;
+  merged: SiteContent;
+  sections: ContentSectionKey[];
+  choices: Partial<Record<ContentSectionKey, ConflictChoice>>;
+};
+
+function sameContentValue(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function setContentSection<K extends ContentSectionKey>(target: SiteContent, key: K, value: SiteContent[K]) {
+  target[key] = value;
+}
+
+function mergeNonOverlappingContentChanges(baseline: SiteContent, mine: SiteContent, latest: SiteContent) {
+  const merged = {} as SiteContent;
+  const sections: ContentSectionKey[] = [];
+  for (const key of CONTENT_SECTION_KEYS) {
+    const mineChanged = !sameContentValue(baseline[key], mine[key]);
+    const latestChanged = !sameContentValue(baseline[key], latest[key]);
+    if (mineChanged && latestChanged && !sameContentValue(mine[key], latest[key])) {
+      sections.push(key);
+      setContentSection(merged, key, latest[key]);
+    } else {
+      setContentSection(merged, key, mineChanged ? mine[key] : latest[key]);
+    }
+  }
+  return { merged, sections };
+}
+
+function readStoredPublishConflict(): PublishConflict | null {
+  try {
+    const value = window.sessionStorage.getItem(PUBLISH_CONFLICT_STORAGE_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value) as Partial<PublishConflict>;
+    if (!parsed.latest || !parsed.mine || !parsed.baseline || !parsed.merged || !Array.isArray(parsed.sections) || typeof parsed.latestRevision !== "number") return null;
+    return parsed as PublishConflict;
+  } catch {
+    return null;
+  }
+}
+
+function subscribeToPublishConflicts(onStoreChange: () => void) {
+  window.addEventListener(PUBLISH_CONFLICT_EVENT, onStoreChange);
+  return () => window.removeEventListener(PUBLISH_CONFLICT_EVENT, onStoreChange);
+}
+
+function storePublishConflict(conflict: PublishConflict | null) {
+  if (conflict) window.sessionStorage.setItem(PUBLISH_CONFLICT_STORAGE_KEY, JSON.stringify(conflict));
+  else window.sessionStorage.removeItem(PUBLISH_CONFLICT_STORAGE_KEY);
+  window.dispatchEvent(new Event(PUBLISH_CONFLICT_EVENT));
+}
+
+export function AdminDashboard({ initialContent, initialRevision, admin, publishingDisabled }: AdminDashboardProps) {
   const [content, setContent] = useState<SiteContent>(initialContent);
+  const [publishedRevision, setPublishedRevision] = useState(initialRevision);
   // The server snapshot keeps hydration stable; the client snapshot enables the
   // local-only affordances immediately after hydration. The API guard remains
   // authoritative throughout.
@@ -53,6 +120,11 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
     subscribeToNothing,
     () => publishingDisabled,
     () => false
+  );
+  const publishConflict = useSyncExternalStore(
+    subscribeToPublishConflicts,
+    readStoredPublishConflict,
+    () => null
   );
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -139,12 +211,38 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
       const response = await fetch("/api/admin/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(content),
+        body: JSON.stringify({ content, expectedRevision: publishedRevision }),
       });
       if (!response.ok) {
-        showToast("error", "Failed to save changes.");
+        if (response.status === 409) {
+          const conflict = (await response.json()) as { latestContent: SiteContent; latestRevision: number };
+          const merged = mergeNonOverlappingContentChanges(publishedBaseline, content, conflict.latestContent);
+          if (merged.sections.length === 0) {
+            setContent(merged.merged);
+            setPublishedBaseline(conflict.latestContent);
+            setPublishedRevision(conflict.latestRevision);
+            setDirty(!sameContentValue(merged.merged, conflict.latestContent));
+            setPublishModalOpen(false);
+            showToast("success", "Someone else published first. Your non-overlapping edits were preserved and are ready to review.");
+          } else {
+            storePublishConflict({
+              baseline: publishedBaseline,
+              mine: content,
+              latest: conflict.latestContent,
+              latestRevision: conflict.latestRevision,
+              merged: merged.merged,
+              sections: merged.sections,
+              choices: {},
+            });
+            setPublishModalOpen(false);
+          }
+        } else {
+          showToast("error", "Failed to save changes.");
+        }
         return;
       }
+      const saved = (await response.json()) as { revision: number };
+      setPublishedRevision(saved.revision);
       setPublishedBaseline(structuredClone(content));
       setDirty(false);
       const savedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -180,6 +278,22 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
   const onLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.href = "/admin/login";
+  };
+
+  const resolvePublishConflict = () => {
+    if (!publishConflict) return;
+    const unresolved = publishConflict.sections.filter((section) => !publishConflict.choices[section]);
+    if (unresolved.length > 0) return;
+    const resolved = { ...publishConflict.merged } as SiteContent;
+    for (const section of publishConflict.sections) {
+      setContentSection(resolved, section, publishConflict.choices[section] === "mine" ? publishConflict.mine[section] : publishConflict.latest[section]);
+    }
+    setContent(resolved);
+    setPublishedBaseline(publishConflict.latest);
+    setPublishedRevision(publishConflict.latestRevision);
+    setDirty(!sameContentValue(resolved, publishConflict.latest));
+    storePublishConflict(null);
+    showToast("success", "Your choices were applied. Review the merged draft, then publish when ready.");
   };
 
   const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni" | "partners" | "learning") => {
@@ -887,7 +1001,9 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
               />
             </label>
             {publishModalError && (
-              <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{publishModalError}</p>
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p>{publishModalError}</p>
+              </div>
             )}
             <div className="flex flex-wrap justify-end gap-3 pt-1">
               <button type="button" className={buttonClass} onClick={closePublishModal} disabled={saving}>
@@ -901,6 +1017,32 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
               >
                 {saving ? "Publishing…" : "Confirm publish"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {publishConflict && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="publish-conflict-title">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/80 bg-white p-6 shadow-2xl shadow-slate-900/15 md:p-7">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[.16em] text-red-700">Publish conflict</p>
+            <h2 id="publish-conflict-title" className="mt-1 text-xl font-bold text-slate-950">Your draft is safe. Choose what to keep.</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">Someone else published while you were editing. We already preserved your non-overlapping changes. For these shared sections, choose the version to keep before continuing. This draft remains saved in this browser tab if you refresh.</p>
+            <div className="mt-5 space-y-3">
+              {publishConflict.sections.map((section) => (
+                <div key={section} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="font-semibold text-slate-900">{CONTENT_SECTION_LABELS[section]}</p>
+                  <p className="mt-1 text-sm text-slate-600">Both you and another admin changed this section.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className={`${buttonClass} ${publishConflict.choices[section] === "mine" ? "border-red-600 bg-red-50 text-red-800" : ""}`} onClick={() => storePublishConflict({ ...publishConflict, choices: { ...publishConflict.choices, [section]: "mine" } })}>Keep my version</button>
+                    <button type="button" className={`${buttonClass} ${publishConflict.choices[section] === "latest" ? "border-slate-700 bg-slate-200 text-slate-900" : ""}`} onClick={() => storePublishConflict({ ...publishConflict, choices: { ...publishConflict.choices, [section]: "latest" } })}>Use latest version</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button type="button" className={buttonClass} onClick={() => { storePublishConflict(null); window.location.reload(); }}>Discard my draft and reload</button>
+              <button type="button" className={primaryButtonClass} onClick={resolvePublishConflict} disabled={publishConflict.sections.some((section) => !publishConflict.choices[section])}>Apply choices</button>
             </div>
           </div>
         </div>
