@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (isLocalPublishingDisabled()) {
+  if (isLocalPublishingDisabled(request.headers.get("host"))) {
     return NextResponse.json({ error: LOCAL_PUBLISHING_DISABLED_MESSAGE }, { status: 403 });
   }
   if (!isSupabaseConfigured()) {
