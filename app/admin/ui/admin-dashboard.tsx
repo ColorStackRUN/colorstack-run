@@ -10,6 +10,11 @@ import { OpportunitiesEditor } from "./opportunities-editor";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
+  admin: {
+    email: string;
+    googleProfileName: string | null;
+    displayName: string;
+  };
 };
 
 type AdminGalleryGroup = {
@@ -37,7 +42,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   return `${String(hour).padStart(2, "0")}:${minute}`;
 });
 
-export function AdminDashboard({ initialContent }: AdminDashboardProps) {
+export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
   const [content, setContent] = useState<SiteContent>(initialContent);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -277,7 +282,19 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                 </p>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <div className="min-w-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-right shadow-sm">
+                <p className="flex items-center justify-end gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-800">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                  Logged in as
+                </p>
+                <p className="max-w-52 truncate text-sm font-semibold text-zinc-900">
+                  {admin.googleProfileName ?? admin.displayName}
+                </p>
+                <p className="max-w-52 truncate text-xs text-zinc-600" title={admin.email}>
+                  {admin.email}
+                </p>
+              </div>
               <button className={buttonClass} onClick={onLogout}>Log out</button>
               <button
                 className={primaryButtonClass}

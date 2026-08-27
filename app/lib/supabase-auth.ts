@@ -7,8 +7,19 @@ import { getSupabaseAdminClient } from "./supabase-admin";
 export type AuthenticatedAdmin = {
   userId: string;
   email: string;
+  /** Google profile name, used only for display—not authorization. */
+  googleProfileName: string | null;
   displayName: string;
 };
+
+function getGoogleProfileName(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const record = metadata as Record<string, unknown>;
+  const candidate = record.full_name ?? record.name;
+  if (typeof candidate !== "string") return null;
+  const name = candidate.trim();
+  return name && name.length <= 120 ? name : null;
+}
 
 function getSupabaseAuthConfig(): { url: string; publishableKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -68,5 +79,10 @@ export async function getAuthenticatedAdmin(): Promise<AuthenticatedAdmin | null
   const access = await isAllowedAdminEmail(email);
   if (!access) return null;
 
-  return { userId: data.user.id, email, displayName: access.displayName };
+  return {
+    userId: data.user.id,
+    email,
+    googleProfileName: getGoogleProfileName(data.user.user_metadata),
+    displayName: access.displayName,
+  };
 }
