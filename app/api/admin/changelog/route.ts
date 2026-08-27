@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { appendAdminChangelogEntry, readAdminChangelog } from "@/app/lib/admin-changelog-store";
 import { getAuthenticatedAdmin } from "@/app/lib/supabase-auth";
+import {
+  isLocalPublishingDisabled,
+  LOCAL_PUBLISHING_DISABLED_MESSAGE,
+} from "@/app/lib/local-publishing-guard";
 
 export const runtime = "nodejs";
 
@@ -17,6 +21,9 @@ export async function POST(request: Request) {
   const admin = await getAuthenticatedAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (isLocalPublishingDisabled()) {
+    return NextResponse.json({ error: LOCAL_PUBLISHING_DISABLED_MESSAGE }, { status: 403 });
   }
 
   let body: unknown;
