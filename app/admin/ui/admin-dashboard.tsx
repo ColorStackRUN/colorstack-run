@@ -283,15 +283,15 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
               )}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <div className="min-w-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-right shadow-sm">
-                <p className="flex items-center justify-end gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-800">
+              <div className="min-w-[240px] rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/70 px-4 py-3 text-left shadow-sm shadow-emerald-950/5">
+                <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-800">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
                   Logged in as
                 </p>
-                <p className="max-w-52 truncate text-sm font-semibold text-zinc-900">
+                <p className="mt-1 max-w-60 truncate text-base font-bold leading-tight text-zinc-950">
                   {admin.googleProfileName ?? admin.displayName}
                 </p>
-                <p className="max-w-52 truncate text-xs text-zinc-600" title={admin.email}>
+                <p className="mt-1 max-w-60 truncate text-sm text-zinc-600" title={admin.email}>
                   {admin.email}
                 </p>
               </div>
