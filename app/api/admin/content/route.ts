@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/app/lib/admin-auth";
-import { readSiteContent, writeSiteContent } from "@/app/lib/content-store";
+import { readSiteContent, readSiteContentSnapshot, writeSiteContent } from "@/app/lib/content-store";
 import { type SiteContent } from "@/app/lib/content-types";
 import { normalizeLearningResources, normalizeOpportunities } from "@/app/lib/hub-content";
 import {
@@ -40,8 +40,13 @@ export async function PUT(request: Request) {
   }
   const result = await writeSiteContent(nextContent, expectedRevision);
   if (result.status === "conflict") {
+    const latest = await readSiteContentSnapshot();
     return NextResponse.json(
-      { error: "Someone else published changes while you were editing. Your changes were not saved." },
+      {
+        error: "Someone else published changes while you were editing. Your changes were not saved.",
+        latestContent: latest.content,
+        latestRevision: latest.revision,
+      },
       { status: 409 }
     );
   }
