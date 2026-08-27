@@ -337,7 +337,7 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
           {["links","events","learning","opportunities","team","partners","gallery","alumni","testimonials"].map((id) => <a key={id} href={`#admin-${id}`} className="whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-red-700">{id.replace("-", " ")}</a>)}
         </nav>
 
-        <div className="admin-pulse" aria-label="Content pulse"><span>{content.events.length} events</span><span>{content.team.length} leaders</span><span>{content.partners.length} partners</span><span>{content.gallery.length} photos</span><span>{content.alumni.length} alumni</span><span>{content.learningResources.length} learning</span><span>{content.opportunities.length} opportunities</span></div>
+        <div className="admin-pulse" aria-label="Content pulse"><span>{content.events.length} events</span><span>{content.team.length} leaders</span><span>{content.committee.length} committee</span><span>{content.partners.length} partners</span><span>{content.gallery.length} photos</span><span>{content.alumni.length} alumni</span><span>{content.learningResources.length} learning</span><span>{content.opportunities.length} opportunities</span></div>
 
         <section id="admin-links" className={sectionClass}>
           <h2 className="text-2xl font-semibold text-gray-900">Chapter Links</h2>
