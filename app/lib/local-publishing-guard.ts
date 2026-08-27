@@ -4,7 +4,7 @@
  * so a disabled browser button cannot be bypassed with a direct API request.
  */
 export function isLocalPublishingDisabled(): boolean {
-  return process.env.NODE_ENV !== "production";
+  return process.env.DISABLE_ADMIN_PUBLISHING === "true" || process.env.NODE_ENV !== "production";
 }
 
 export const LOCAL_PUBLISHING_DISABLED_MESSAGE =
