@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import type { SiteContent } from "@/app/lib/content-types";
 import { buildSiteContentChangeSummary } from "@/app/lib/site-content-change-summary";
@@ -10,6 +10,7 @@ import { OpportunitiesEditor } from "./opportunities-editor";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
+  publishingDisabled: boolean;
   admin: {
     email: string;
     googleProfileName: string | null;
@@ -41,9 +42,18 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
   const minute = index % 2 === 0 ? "00" : "30";
   return `${String(hour).padStart(2, "0")}:${minute}`;
 });
+const subscribeToNothing = () => () => {};
 
-export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
+export function AdminDashboard({ initialContent, admin, publishingDisabled }: AdminDashboardProps) {
   const [content, setContent] = useState<SiteContent>(initialContent);
+  // The server snapshot keeps hydration stable; the client snapshot enables the
+  // local-only affordances immediately after hydration. The API guard remains
+  // authoritative throughout.
+  const localDraftMode = useSyncExternalStore(
+    subscribeToNothing,
+    () => publishingDisabled,
+    () => false
+  );
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [activeSection, setActiveSection] = useState("links");
@@ -97,6 +107,10 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
   };
 
   const openPublishModal = () => {
+    if (localDraftMode) {
+      showToast("error", "Publishing is disabled in local development.");
+      return;
+    }
     if (!dirty) {
       showToast("error", "Nothing to save yet.");
       return;
@@ -113,6 +127,7 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
   };
 
   const confirmPublish = async () => {
+    if (localDraftMode) return;
     const message = publishLogDraft.trim();
     if (!message) {
       setPublishModalError("Add what changed (the summary below can be edited).");
@@ -168,6 +183,9 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
   };
 
   const uploadImage = async (file: File, scope: "events" | "team" | "gallery" | "alumni" | "partners" | "learning") => {
+    if (localDraftMode) {
+      throw new Error("Image uploads are disabled in local development.");
+    }
     const formData = new FormData();
     formData.append("file", file);
     formData.append("scope", scope);
@@ -262,7 +280,7 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[.16em] text-red-700">Content console</p>
               <h1 className="mt-1 text-xl font-bold text-zinc-950">ColorStackRUN Admin</h1>
-              <p className="mt-1 text-sm text-zinc-600">{saving ? "Publishing…" : dirty ? "Unsaved changes" : "Published"}{lastSavedAt ? ` · saved ${lastSavedAt}` : ""}</p>
+              <p className="mt-1 text-sm text-zinc-600">{localDraftMode ? "Local draft mode" : saving ? "Publishing…" : dirty ? "Unsaved changes" : "Published"}{lastSavedAt ? ` · saved ${lastSavedAt}` : ""}</p>
               <p className="mt-2">
                 <Link
                   href="/admin/changelog"
@@ -299,12 +317,19 @@ export function AdminDashboard({ initialContent, admin }: AdminDashboardProps) {
               <button
                 className={primaryButtonClass}
                 onClick={openPublishModal}
-                disabled={saving || publishModalOpen}
+                disabled={localDraftMode || saving || publishModalOpen}
+                title={localDraftMode ? "Publishing is disabled in local development." : undefined}
               >
-                {saving ? "Saving..." : "Save & Publish"}
+                {localDraftMode ? "Publishing disabled locally" : saving ? "Saving..." : "Save & Publish"}
               </button>
             </div>
           </div>
+          {localDraftMode && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">
+              <span className="mt-0.5 font-bold" aria-hidden="true">LOCAL</span>
+              <p><strong>Draft mode is on.</strong> Publishing and image uploads are disabled here, so this server cannot change the live site.</p>
+            </div>
+          )}
           {dirty && <p className="mt-3 inline-block rounded-md bg-[#FFF1F2] px-2 py-1 font-mono text-xs text-red-700">DRAFT CHANGES</p>}
         </header>
 

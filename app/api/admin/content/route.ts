@@ -3,6 +3,10 @@ import { isAdminAuthenticated } from "@/app/lib/admin-auth";
 import { readSiteContent, writeSiteContent } from "@/app/lib/content-store";
 import { type SiteContent } from "@/app/lib/content-types";
 import { normalizeLearningResources, normalizeOpportunities } from "@/app/lib/hub-content";
+import {
+  isLocalPublishingDisabled,
+  LOCAL_PUBLISHING_DISABLED_MESSAGE,
+} from "@/app/lib/local-publishing-guard";
 
 export const runtime = "nodejs";
 
@@ -19,6 +23,9 @@ export async function PUT(request: Request) {
   const authed = await isAdminAuthenticated();
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (isLocalPublishingDisabled(request.headers.get("host"))) {
+    return NextResponse.json({ error: LOCAL_PUBLISHING_DISABLED_MESSAGE }, { status: 403 });
   }
 
   const input = (await request.json()) as SiteContent;
