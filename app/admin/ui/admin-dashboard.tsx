@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
-import { ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY } from "@/app/lib/admin-changelog-author-storage";
 import type { SiteContent } from "@/app/lib/content-types";
 import { buildSiteContentChangeSummary } from "@/app/lib/site-content-change-summary";
-import { AdminAuthorSelect } from "./admin-author-select";
 import { LearningResourcesEditor } from "./learning-resources-editor";
 import { OpportunitiesEditor } from "./opportunities-editor";
 
@@ -52,7 +50,6 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   const [publishedBaseline, setPublishedBaseline] = useState<SiteContent>(() => structuredClone(initialContent));
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishLogDraft, setPublishLogDraft] = useState("");
-  const [publishAuthorName, setPublishAuthorName] = useState("");
   const [publishModalError, setPublishModalError] = useState<string | null>(null);
 
   const hasGallery = useMemo(() => content.gallery.length > 0, [content.gallery.length]);
@@ -101,13 +98,6 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
     }
     setPublishModalError(null);
     setPublishLogDraft(buildSiteContentChangeSummary(publishedBaseline, content));
-    try {
-      const saved = localStorage.getItem(ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY);
-      const names = new Set(content.team.map((m) => m.name));
-      setPublishAuthorName(saved && names.has(saved) ? saved : "");
-    } catch {
-      setPublishAuthorName("");
-    }
     setPublishModalOpen(true);
   };
 
@@ -118,16 +108,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
   };
 
   const confirmPublish = async () => {
-    const author = publishAuthorName.trim();
     const message = publishLogDraft.trim();
-    if (content.team.length === 0) {
-      setPublishModalError("Add at least one person in the Executive Board section of the CMS before publishing.");
-      return;
-    }
-    if (!author) {
-      setPublishModalError("Select who is making this change from the list.");
-      return;
-    }
     if (!message) {
       setPublishModalError("Add what changed (the summary below can be edited).");
       return;
@@ -150,16 +131,10 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
       setLastSavedAt(savedAt);
       setSaveHistory((prev) => [savedAt, ...prev].slice(0, 4));
 
-      try {
-        localStorage.setItem(ADMIN_CHANGELOG_AUTHOR_STORAGE_KEY, author);
-      } catch {
-        /* ignore */
-      }
-
       const logRes = await fetch("/api/admin/changelog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, authorName: author }),
+        body: JSON.stringify({ message }),
       });
       setPublishModalOpen(false);
       if (!logRes.ok) {
@@ -850,29 +825,16 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
               Save & publish
             </h2>
             <p className="text-sm text-slate-600">
-              We pre-filled a summary of edits since your last successful publish. Add your name, review the summary,
-              then confirm.
+              We pre-filled a summary of edits since your last successful publish. Review the summary, then confirm.
             </p>
             <div className="rounded-xl border border-amber-300/80 bg-amber-100 px-3 py-2.5 text-sm leading-relaxed text-slate-900">
               <strong className="font-semibold text-slate-950">Please describe exactly what you changed</strong>{" "}
               (edit the summary below if the auto-generated list is incomplete). This creates a clear record for the
               team.
             </div>
-            {content.team.length === 0 && (
-              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                Add at least one person under <strong className="font-semibold">Executive Board</strong> in the CMS
-                so you can choose who is making this change.
-              </p>
-            )}
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700">Who is making this change</span>
-              <AdminAuthorSelect
-                team={content.team}
-                value={publishAuthorName}
-                onChange={setPublishAuthorName}
-                className="w-full rounded-xl border border-slate-300/80 bg-white px-3 py-2.5 text-slate-900 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
-              />
-            </label>
+            <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm leading-relaxed text-sky-950">
+              This publish will be attributed to your verified Google account.
+            </p>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700">What changed (activity log)</span>
               <textarea
@@ -893,7 +855,7 @@ export function AdminDashboard({ initialContent }: AdminDashboardProps) {
                 type="button"
                 className={primaryButtonClass}
                 onClick={confirmPublish}
-                disabled={saving || content.team.length === 0}
+                disabled={saving}
               >
                 {saving ? "Publishing…" : "Confirm publish"}
               </button>

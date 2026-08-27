@@ -25,7 +25,8 @@
     "supabase:backfill-media": "node scripts/backfill-media-assets.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.105.1",
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.112.4",
     "framer-motion": "^12.38.0",
     "next": "16.2.4",
     "react": "19.2.4",
