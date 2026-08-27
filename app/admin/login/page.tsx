@@ -7,7 +7,6 @@ import { getSupabaseBrowserClient } from "@/app/lib/supabase-browser";
 function loginErrorFromUrl(): string {
   if (typeof window === "undefined") return "";
   const reason = new URLSearchParams(window.location.search).get("error");
-  if (reason === "not_authorized") return "This Google account is not on the current board access list.";
   if (reason === "sign_in_failed") return "Google sign-in could not be completed. Please try again.";
   if (reason === "missing_code") return "Google did not return a sign-in code. Please try again.";
   return "";

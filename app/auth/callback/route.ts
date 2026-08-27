@@ -28,8 +28,7 @@ export async function GET(request: Request) {
   const allowed = email ? await isAllowedAdminEmail(email) : null;
   if (userError || !data.user || !allowed) {
     await supabase.auth.signOut();
-    loginUrl.searchParams.set("error", "not_authorized");
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/admin/access-denied", url.origin));
   }
 
   return NextResponse.redirect(new URL(next, url.origin));
