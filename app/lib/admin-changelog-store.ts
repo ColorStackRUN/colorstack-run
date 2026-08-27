@@ -27,8 +27,9 @@ function normalizeEntries(raw: unknown): AdminChangelogEntry[] {
     const message = typeof rec.message === "string" ? rec.message : "";
     const createdAt = typeof rec.createdAt === "string" ? rec.createdAt : "";
     const authorName = typeof rec.authorName === "string" ? rec.authorName : "";
+    const authorEmail = typeof rec.authorEmail === "string" ? rec.authorEmail : null;
     if (!id || !message || !createdAt) continue;
-    parsed.push({ id, message, createdAt, authorName });
+    parsed.push({ id, message, createdAt, authorName, authorEmail });
   }
   return parsed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
@@ -56,16 +57,17 @@ async function readChangelogFromSupabase(): Promise<AdminChangelogEntry[] | null
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from("admin_changelog")
-    .select("id, author_name, message, created_at")
+    .select("id, author_name, author_email, message, created_at")
     .order("created_at", { ascending: false })
     .limit(QUERY_LIMIT);
   if (error) {
     console.error("[admin-changelog] Supabase read failed:", error.message);
     return null;
   }
-  return (data ?? []).map((row: { id: string; author_name: string | null; message: string; created_at: string }) => ({
+  return (data ?? []).map((row: { id: string; author_name: string | null; author_email: string | null; message: string; created_at: string }) => ({
     id: row.id,
     authorName: row.author_name?.trim() ?? "",
+    authorEmail: row.author_email?.trim() ?? null,
     message: row.message,
     createdAt: row.created_at,
   }));
@@ -80,6 +82,8 @@ export async function readAdminChangelog(): Promise<AdminChangelogEntry[]> {
 export async function appendAdminChangelogEntry(input: {
   message: string;
   authorName: string;
+  authorEmail: string;
+  authorUserId: string;
 }): Promise<AdminChangelogEntry> {
   const trimmed = input.message.trim();
   const author = input.authorName.trim();
@@ -100,15 +104,21 @@ export async function appendAdminChangelogEntry(input: {
     const supabase = getSupabaseAdminClient();
     const { data, error } = await supabase
       .from("admin_changelog")
-      .insert({ message: trimmed, author_name: author })
-      .select("id, author_name, message, created_at")
-      .single<{ id: string; author_name: string; message: string; created_at: string }>();
+      .insert({
+        message: trimmed,
+        author_name: author,
+        author_email: input.authorEmail.trim().toLowerCase(),
+        author_user_id: input.authorUserId,
+      })
+      .select("id, author_name, author_email, message, created_at")
+      .single<{ id: string; author_name: string; author_email: string | null; message: string; created_at: string }>();
     if (error) {
       throw new Error(`Failed to save change log entry: ${error.message}`);
     }
     return {
       id: data.id,
       authorName: data.author_name?.trim() ?? author,
+      authorEmail: data.author_email?.trim() ?? input.authorEmail.trim().toLowerCase(),
       message: data.message,
       createdAt: data.created_at,
     };
@@ -118,6 +128,7 @@ export async function appendAdminChangelogEntry(input: {
   const entry: AdminChangelogEntry = {
     id: randomUUID(),
     authorName: author,
+    authorEmail: input.authorEmail.trim().toLowerCase() || null,
     message: trimmed,
     createdAt: new Date().toISOString(),
   };

@@ -178,8 +178,8 @@ High-level map (paths are under the repo root unless noted).
 
 | Variable | Role |
 |----------|------|
-| `ADMIN_DASHBOARD_PASSWORD` | Admin CMS login |
-| `ADMIN_SESSION_SECRET` | Signed admin session cookie |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL used by Google OAuth and browser sessions |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key used by Google OAuth and browser sessions |
 | `NEXT_PUBLIC_SITE_URL` | Canonical site origin (metadata, links) |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only key for CMS writes and migrations |
@@ -191,9 +191,10 @@ Admin writes and production-style content hosting expect Supabase to be configur
 
 ## Admin CMS
 
-- **URL:** `/admin/login` → session → `/admin` (content) and `/admin/changelog` (read-only publish history when enabled).
+- **URL:** `/admin/login` → Google session → `/admin` (content) and `/admin/changelog` (read-only publish history).
 - **Who may use it:** See [Roles: who does what](#roles-who-does-what).
-- **Capabilities (high level):** chapter links, events and flyers, executive board, partners, gallery, alumni, testimonials; **Save & publish** can append an activity log entry (name + summary) when the change log backend is available.
+- **Access control:** Google is the only sign-in provider. A server-side `admin_access` allowlist limits access to current board emails; do not replace it with a domain-wide Rutgers rule.
+- **Capabilities (high level):** chapter links, events and flyers, executive board, partners, gallery, alumni, testimonials; **Save & publish** appends an activity log entry using the verified Google account, not a user-selectable name.
 
 Persisted content for the public site goes to **`site_content_store`** in Postgres when Supabase is active.
 
@@ -219,7 +220,13 @@ Apply migrations in order in the Supabase SQL editor (or your org’s migration 
 - Adds relational records for media metadata, learning resources and chapters, and opportunities. Image/video bytes remain in Supabase Storage; the database stores references and content metadata only. This migration is additive: the current `site_content_store` JSONB document remains the active application source until a separately reviewed backfill and code cutover.
 - After applying that migration, use `pnpm supabase:backfill-media` to register the objects already in the configured Storage bucket with `media_assets`. The command is idempotent and does not upload, delete, or rewrite existing media.
 
-### 3. Backfill from repo assets
+### 4. Google-admin authorization
+
+- `supabase/migrations/20260827040114_google_admin_auth.sql`
+- Creates the server-only `admin_access` email allowlist, seeds the approved board addresses, and adds verified email/user-ID fields to future `admin_changelog` entries.
+- In Supabase Dashboard, enable the Google provider and set the Google OAuth client ID/secret. Configure `http://localhost:3000/auth/callback` and `https://colorstackrun.org/auth/callback` in Supabase Auth redirect URLs, and add the corresponding site origins in Google Cloud.
+
+### 5. Backfill from repo assets
 
 With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set:
 
