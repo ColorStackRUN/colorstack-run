@@ -31,7 +31,9 @@ export async function POST(request: Request) {
   try {
     const entry = await appendAdminChangelogEntry({
       message,
-      authorName: admin.displayName,
+      // Google profile metadata is display-only. The verified email below remains
+      // the server-side authorization and audit identity.
+      authorName: admin.googleProfileName ?? admin.displayName,
       authorEmail: admin.email,
       authorUserId: admin.userId,
     });
