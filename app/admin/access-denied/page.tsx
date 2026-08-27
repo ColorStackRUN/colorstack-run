@@ -12,14 +12,14 @@ export default function AdminAccessDeniedPage() {
         <p className="mb-5 inline-flex rounded-full border border-red-300/25 bg-red-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-red-100">
           Admin area
         </p>
-        <h1 className="max-w-md text-4xl font-bold tracking-tight text-white md:text-5xl">Hold up. Backstage pass required.</h1>
+        <h1 className="max-w-md text-4xl font-bold tracking-tight text-white md:text-5xl">Nice try. This door is not for you.</h1>
         <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-300 md:text-lg">
-          This is the ColorStack RUN control room, not a choose-your-own-adventure. The Google account you used is not
-          on the current board access list.
+          You&apos;ve reached the ColorStack RUN admin console. It is reserved for authorized current E-Board members—not
+          for curious clicks, side quests, or seeing what happens next.
         </p>
         <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-400">
-          If you&apos;re a current board member, switch to your approved ScarletMail account. Otherwise, this is your cue
-          to enjoy the public site instead.
+          If you&apos;re supposed to be here, use your approved ScarletMail account. If not, this is the part where you
+          gracefully step away from the control panel.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
