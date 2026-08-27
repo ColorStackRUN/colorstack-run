@@ -28,11 +28,22 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: LOCAL_PUBLISHING_DISABLED_MESSAGE }, { status: 403 });
   }
 
-  const input = (await request.json()) as SiteContent;
+  const body = (await request.json()) as { content?: SiteContent; expectedRevision?: unknown };
+  const input = body.content;
+  const expectedRevision = body.expectedRevision;
+  if (!input || typeof expectedRevision !== "number" || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+    return NextResponse.json({ error: "Invalid publish request. Reload the admin console and try again." }, { status: 400 });
+  }
   const nextContent = { ...input, learningResources: normalizeLearningResources(input.learningResources), opportunities: normalizeOpportunities(input.opportunities) };
   if ((input.learningResources?.length ?? 0) !== nextContent.learningResources.length || (input.opportunities?.length ?? 0) !== nextContent.opportunities.length) {
     return NextResponse.json({ error: "One or more Learning Hub or Opportunity records are invalid. Check required fields, dates, URLs, and unique session slugs." }, { status: 400 });
   }
-  await writeSiteContent(nextContent);
-  return NextResponse.json({ success: true });
+  const result = await writeSiteContent(nextContent, expectedRevision);
+  if (result.status === "conflict") {
+    return NextResponse.json(
+      { error: "Someone else published changes while you were editing. Your changes were not saved." },
+      { status: 409 }
+    );
+  }
+  return NextResponse.json({ success: true, revision: result.revision });
 }

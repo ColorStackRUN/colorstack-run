@@ -10,6 +10,7 @@ import { OpportunitiesEditor } from "./opportunities-editor";
 
 type AdminDashboardProps = {
   initialContent: SiteContent;
+  initialRevision: number;
   publishingDisabled: boolean;
   admin: {
     email: string;
@@ -44,8 +45,9 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
 });
 const subscribeToNothing = () => () => {};
 
-export function AdminDashboard({ initialContent, admin, publishingDisabled }: AdminDashboardProps) {
+export function AdminDashboard({ initialContent, initialRevision, admin, publishingDisabled }: AdminDashboardProps) {
   const [content, setContent] = useState<SiteContent>(initialContent);
+  const [publishedRevision, setPublishedRevision] = useState(initialRevision);
   // The server snapshot keeps hydration stable; the client snapshot enables the
   // local-only affordances immediately after hydration. The API guard remains
   // authoritative throughout.
@@ -139,12 +141,20 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
       const response = await fetch("/api/admin/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(content),
+        body: JSON.stringify({ content, expectedRevision: publishedRevision }),
       });
       if (!response.ok) {
-        showToast("error", "Failed to save changes.");
+        if (response.status === 409) {
+          setPublishModalError(
+            "Someone else published changes while you were editing. Your changes have not been saved. Copy anything you need, then reload to work from the latest version."
+          );
+        } else {
+          showToast("error", "Failed to save changes.");
+        }
         return;
       }
+      const saved = (await response.json()) as { revision: number };
+      setPublishedRevision(saved.revision);
       setPublishedBaseline(structuredClone(content));
       setDirty(false);
       const savedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -887,7 +897,14 @@ export function AdminDashboard({ initialContent, admin, publishingDisabled }: Ad
               />
             </label>
             {publishModalError && (
-              <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{publishModalError}</p>
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p>{publishModalError}</p>
+                {publishModalError.startsWith("Someone else published") && (
+                  <button type="button" className="mt-2 font-semibold underline underline-offset-2" onClick={() => window.location.reload()}>
+                    Reload latest content
+                  </button>
+                )}
+              </div>
             )}
             <div className="flex flex-wrap justify-end gap-3 pt-1">
               <button type="button" className={buttonClass} onClick={closePublishModal} disabled={saving}>
