@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { HOME_DESCRIPTION, HOME_TITLE, SITE_KEYWORDS } from "@/app/lib/site-metadata";
 import { getSiteOrigin } from "@/app/lib/site-url";
@@ -109,6 +110,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <Analytics />
       </body>
     </html>
   );
