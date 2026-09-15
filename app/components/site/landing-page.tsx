@@ -12,10 +12,10 @@ import { MotionSection, Reveal, AnimatedCounter } from "./motion";
 import { TeamCardPhysicsShell, TEAM_CARD_PHYSICS_MODE } from "./team-card-physics-shell";
 
 type LandingPageProps = { content: SiteContent };
-type ModalImageItem = { src: string; title: string };
+type ModalImageItem = { src: string; title?: string };
 type ActiveFlyerState = {
   src: string;
-  title: string;
+  title?: string;
   galleryItems?: ModalImageItem[];
   galleryIndex?: number;
 };
@@ -786,10 +786,9 @@ export function LandingPage({ content }: LandingPageProps) {
                         type="button"
                         className="relative aspect-[4/3] w-full overflow-hidden cursor-zoom-in"
                         onClick={() => {
-                          const sectionTitle = gallerySections[activeGalleryTab].title;
                           const items = gallerySections[activeGalleryTab].images.map((image) => ({
                             src: image.src,
-                            title: image.caption || image.alt || sectionTitle,
+                            title: image.caption?.trim() || undefined,
                           }));
                           const index = items.findIndex((image) => image.src === item.src);
                           const selectedIndex = index >= 0 ? index : 0;
@@ -802,7 +801,7 @@ export function LandingPage({ content }: LandingPageProps) {
                             galleryIndex: selectedIndex,
                           });
                         }}
-                        aria-label={`Open image preview for ${item.caption || item.alt}`}
+                        aria-label={item.caption?.trim() ? `Open image preview: ${item.caption.trim()}` : "Open image preview"}
                       >
                         <ImageWithSkeleton
                           src={item.src}
@@ -812,9 +811,9 @@ export function LandingPage({ content }: LandingPageProps) {
                           sizes="(max-width: 1024px) 50vw, 33vw"
                         />
                       </button>
-                      {item.caption && (
+                      {item.caption?.trim() && (
                         <figcaption className={`px-4 py-3 text-sm font-semibold tracking-[0.04em] italic ${T.text}`}>
-                          {item.caption}
+                          {item.caption.trim()}
                         </figcaption>
                       )}
                     </figure>

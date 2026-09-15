@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { SiteContent } from "@/app/lib/content-types";
 import { buildSiteContentChangeSummary } from "@/app/lib/site-content-change-summary";
 import { LearningResourcesEditor } from "./learning-resources-editor";
@@ -792,6 +795,12 @@ export function AdminDashboard({ initialContent, initialRevision, admin, publish
                 }}
                 onUpdateCaption={(id, caption) => updateGallery(content, id, { caption }, update)}
                 onRemove={(id) => update({ ...content, gallery: content.gallery.filter((g) => g.id !== id) })}
+                onReorder={(activeId, overId) => {
+                  const oldIndex = content.gallery.findIndex((image) => image.id === activeId);
+                  const newIndex = content.gallery.findIndex((image) => image.id === overId);
+                  if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+                  update({ ...content, gallery: arrayMove(content.gallery, oldIndex, newIndex) });
+                }}
               />
             ))}
           </div>
@@ -1536,13 +1545,24 @@ function GalleryGroupPanel({
   onUploadFiles,
   onUpdateCaption,
   onRemove,
+  onReorder,
 }: {
   group: AdminGalleryGroup;
   onUploadFiles: (files: File[]) => Promise<void>;
   onUpdateCaption: (id: string, caption: string) => void;
   onRemove: (id: string) => void;
+  onReorder: (activeId: string, overId: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    onReorder(String(active.id), String(over.id));
+  };
 
   return (
     <div className="rounded-2xl border border-gray-200/90 bg-white p-4 md:p-5 space-y-4 shadow-sm">
@@ -1572,36 +1592,65 @@ function GalleryGroupPanel({
       </div>
 
       {group.images.length > 0 ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-          {group.images.map((image) => (
-            <div key={image.id} className="space-y-1.5">
-              <div className="relative group/thumb">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full aspect-square object-cover rounded-xl border border-gray-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => onRemove(image.id)}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-all"
-                >
-                  ×
-                </button>
-              </div>
-              <input
-                value={image.caption ?? ""}
-                onChange={(e) => onUpdateCaption(image.id, e.target.value)}
-                placeholder="Caption..."
-                className="w-full text-xs text-gray-900 placeholder:text-gray-400 rounded-lg border border-gray-200 bg-white px-2 py-1.5 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100 transition-all"
-              />
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={group.images.map((image) => image.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5">
+              {group.images.map((image) => (
+                <SortableGalleryImage key={image.id} image={image} onUpdateCaption={onUpdateCaption} onRemove={onRemove} />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <p className="text-sm text-gray-400 py-1">No photos yet. Click &quot;Add Photos&quot; to upload.</p>
       )}
+    </div>
+  );
+}
+
+function SortableGalleryImage({
+  image,
+  onUpdateCaption,
+  onRemove,
+}: {
+  image: SiteContent["gallery"][number];
+  onUpdateCaption: (id: string, caption: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({ id: image.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`space-y-1.5 ${isDragging ? "z-10 opacity-45" : ""}`}>
+      <div className="relative group/thumb">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image.src} alt={image.alt} className="aspect-square w-full rounded-xl border border-gray-200 object-cover" />
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          className="absolute bottom-1 left-1 inline-flex min-h-8 items-center gap-1 rounded-lg bg-black/65 px-2 text-[10px] font-semibold text-white opacity-100 transition-colors hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 sm:opacity-0 sm:group-hover/thumb:opacity-100"
+          aria-label={`Reorder ${image.caption?.trim() || "gallery image"}`}
+          {...attributes}
+          {...listeners}
+        >
+          <span aria-hidden="true">⠿</span> Move
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(image.id)}
+          className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-sm text-white opacity-100 transition-all hover:bg-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 sm:h-5 sm:w-5 sm:text-xs sm:opacity-0 sm:group-hover/thumb:opacity-100"
+          aria-label={`Remove ${image.caption?.trim() || "gallery image"}`}
+        >
+          ×
+        </button>
+      </div>
+      <input
+        value={image.caption ?? ""}
+        onChange={(e) => onUpdateCaption(image.id, e.target.value)}
+        placeholder="Optional caption..."
+        aria-label={`Caption for ${image.caption?.trim() || "gallery image"}`}
+        className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-red-400 focus:ring-1 focus:ring-red-100"
+      />
     </div>
   );
 }
