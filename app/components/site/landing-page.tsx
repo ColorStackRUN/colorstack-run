@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { type ComponentProps, type CSSProperties, type MouseEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { type SiteContent } from "@/app/lib/content-types";
+import { getNextEventStatusChange, resolveEventStatus, splitEventsByStatus } from "@/app/lib/event-status";
 import { isSectionSlug, type SectionSlug } from "@/app/lib/site-sections";
 import { MotionSection, Reveal, AnimatedCounter } from "./motion";
 import { TeamCardPhysicsShell, TEAM_CARD_PHYSICS_MODE } from "./team-card-physics-shell";
@@ -135,9 +136,10 @@ export function LandingPage({ content }: LandingPageProps) {
   }, [pathname]);
 
   const { links, events, stats, team, committee, impact, gallery, alumni, testimonials } = content;
+  const [eventStatusTime, setEventStatusTime] = useState(() => Date.now());
   const partners = content.partners.filter((p) => p.src.trim().length > 0);
   const sortedEvents = [...events].sort((a, b) => compareEventDateTime(a, b));
-  const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents);
+  const { upcomingEvents, pastEvents } = splitEventsByStatus(sortedEvents, eventStatusTime);
   const gallerySections = buildGallerySections(gallery, sortedEvents);
   const [eventsView, setEventsView] = useState<"upcoming" | "past">("upcoming");
   const [activeGalleryTab, setActiveGalleryTab] = useState(0);
@@ -155,6 +157,22 @@ export function LandingPage({ content }: LandingPageProps) {
     },
     [gallery.length, alumni.length]
   );
+
+  useEffect(() => {
+    const refreshEventStatuses = () => setEventStatusTime(Date.now());
+    const nextChange = getNextEventStatusChange(events, Date.now());
+    // Browsers cap an individual timeout at about 24.8 days, so recheck
+    // periodically for dates farther out as well.
+    const timeoutId = nextChange === null
+      ? undefined
+      : window.setTimeout(refreshEventStatuses, Math.min(nextChange - Date.now(), 2_147_483_647));
+
+    window.addEventListener("visibilitychange", refreshEventStatuses);
+    return () => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      window.removeEventListener("visibilitychange", refreshEventStatuses);
+    };
+  }, [events, eventStatusTime]);
 
   useEffect(() => {
     if (!sectionFromPath) return;
@@ -1706,35 +1724,6 @@ function to12Hour(time: string) {
   if (Number.isNaN(hour) || Number.isNaN(minute)) return time;
   const meridiem = hour >= 12 ? "PM" : "AM";
   return `${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")} ${meridiem}`;
-}
-function splitEventsByStatus(events: SiteContent["events"]) {
-  const upcomingEvents: SiteContent["events"] = [];
-  const pastEvents: SiteContent["events"] = [];
-  for (const event of events) {
-    if (resolveEventStatus(event) === "past") {
-      pastEvents.push(event);
-    } else {
-      upcomingEvents.push(event);
-    }
-  }
-  return { upcomingEvents, pastEvents };
-}
-function resolveEventStatus(event: SiteContent["events"][number]) {
-  if (event.statusOverride) return event.statusOverride;
-  const eventEnd = getEventEndDate(event);
-  if (!eventEnd) return "upcoming";
-  return eventEnd.getTime() < Date.now() ? "past" : "upcoming";
-}
-function getEventEndDate(event: SiteContent["events"][number]) {
-  const parsed = parseDateInput(event.endDate ?? event.date);
-  if (!parsed) return null;
-  const [hourText, minuteText] = event.endTime.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) {
-    return new Date(parsed.year, parsed.month - 1, parsed.day, 23, 59, 59, 999);
-  }
-  return new Date(parsed.year, parsed.month - 1, parsed.day, hour, minute, 0, 0);
 }
 function compareEventDateTime(a: SiteContent["events"][number], b: SiteContent["events"][number]) {
   const aTime = getEventSortTime(a);
